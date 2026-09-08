@@ -1,6 +1,6 @@
 # SPEC 01 — MVP visual: las cinco pantallas de Arcade Vault
 
-**Estado:** Approved
+**Estado:** Implementado
 **Depende de:** —
 **Fecha:** 2026-09-07
 
