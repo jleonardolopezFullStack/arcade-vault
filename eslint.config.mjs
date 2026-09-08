@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Prototipo standalone sin bundler: sus componentes son globales de window
+    // (React/Nav/GAMES…) cargados por <script>. No es código de la app y el
+    // spec 01 lo declara fuente de verdad intocable.
+    "references/**",
   ]),
 ]);
 
