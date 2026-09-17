@@ -1,56 +1,51 @@
-import { Suspense } from "react";
+import type { Metadata } from "next";
 
-import { GameCard } from "@/components/library/game-card";
-import { LibraryFilters } from "@/components/library/library-filters";
-import { GAMES } from "@/lib/data";
+import { Activity } from "@/components/home/activity";
+import { FeatureGrid } from "@/components/home/feature-grid";
+import { FinalCta } from "@/components/home/final-cta";
+import { GameRail } from "@/components/home/game-rail";
+import { Hero } from "@/components/home/hero";
+import { Pricing } from "@/components/home/pricing";
+import { Reveal } from "@/components/home/reveal";
+import { StatsBand } from "@/components/home/stats-band";
 
-function first(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return value[0] ?? "";
-  return value ?? "";
-}
+// La raíz es la landing: lleva el reclamo del hero en el título, no el
+// patrón «<Página> · Arcade Vault» del resto de rutas.
+export const metadata: Metadata = {
+  title: "Arcade Vault · El arcade clásico está de vuelta",
+  description:
+    "Juega los mejores clásicos directamente en tu navegador. Sin descargas. Sin costo. Solo diversión.",
+};
 
-export default async function Home({ searchParams }: PageProps<"/">) {
-  // En Next 16 searchParams es una Promise.
-  const params = await searchParams;
-  const q = first(params.q);
-  const cat = first(params.cat) || "TODOS";
-
-  const needle = q.toLowerCase();
-  const games = GAMES.filter(
-    (g) =>
-      (cat === "TODOS" || g.cat === cat) &&
-      g.title.toLowerCase().includes(needle),
-  );
-
+// El hero no lleva reveal: es lo primero que se ve.
+export default function Home() {
   return (
     <div className="fade-in">
-      <section className="mx-auto max-w-[1320px] px-8 pt-16 pb-8 text-center max-[720px]:px-4 max-[720px]:pt-9 max-[720px]:pb-4">
-        <h1 className="flicker m-0 bg-[linear-gradient(180deg,#fff_0%,var(--cyan)_60%,var(--magenta)_110%)] bg-clip-text font-pixel text-[clamp(28px,6vw,64px)] tracking-[0.06em] text-transparent drop-shadow-[0_0_12px_rgba(0,245,255,0.4)]">
-          ARCADE VAULT
-        </h1>
-        <div className="mt-[18px] font-pixel text-[clamp(10px,1.6vw,14px)] tracking-[0.2em] text-yellow">
-          INSERTA UNA MONEDA PARA JUGAR <span className="blink">_</span>
-        </div>
-      </section>
+      <Hero />
 
-      <Suspense fallback={null}>
-        <LibraryFilters q={q} cat={cat} />
-      </Suspense>
+      <Reveal>
+        <FeatureGrid />
+      </Reveal>
 
-      <div className="mx-auto mt-8 mb-20 grid max-w-[1320px] grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-[22px] px-8 max-[720px]:px-4">
-        {games.map((game) => (
-          <GameCard key={game.id} game={game} />
-        ))}
+      <Reveal>
+        <GameRail />
+      </Reveal>
 
-        {games.length === 0 && (
-          <div className="col-span-full p-20 text-center text-ink-faint">
-            <div className="font-pixel uppercase leading-[1.25] mb-3 text-sm tracking-[0.04em] text-magenta">
-              NO HAY RESULTADOS
-            </div>
-            <div>Intenta otra búsqueda o categoría.</div>
-          </div>
-        )}
-      </div>
+      <Reveal>
+        <StatsBand />
+      </Reveal>
+
+      <Reveal>
+        <Activity />
+      </Reveal>
+
+      <Reveal>
+        <Pricing />
+      </Reveal>
+
+      <Reveal>
+        <FinalCta />
+      </Reveal>
     </div>
   );
 }

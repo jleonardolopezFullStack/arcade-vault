@@ -9,8 +9,10 @@ import { useSession } from "@/lib/session-context";
 
 // El spec fija el colapso a 900px (el prototipo usaba 840px).
 const LINKS = [
-  { href: "/", label: "Biblioteca" },
+  { href: "/", label: "Inicio" },
+  { href: "/biblioteca", label: "Biblioteca" },
   { href: "/salon", label: "Salón de la Fama" },
+  { href: "/acerca-de", label: "Acerca de" },
 ] as const;
 
 const DESKTOP_LINK =
@@ -23,11 +25,14 @@ export function Nav() {
   const pathname = usePathname();
   const { user, signOut } = useSession();
 
-  // Un juego (detalle o reproductor) mantiene «Biblioteca» como sección activa.
+  // «Inicio» es la landing y coincide exacto; un juego (detalle o reproductor)
+  // mantiene «Biblioteca» como sección activa.
   const isActive = (href: string) =>
     href === "/"
-      ? pathname === "/" || pathname.startsWith("/juegos")
-      : pathname === href || pathname.startsWith(`${href}/`);
+      ? pathname === "/"
+      : href === "/biblioteca"
+        ? pathname === "/biblioteca" || pathname.startsWith("/juegos")
+        : pathname === href || pathname.startsWith(`${href}/`);
 
   const close = () => setOpen(false);
 

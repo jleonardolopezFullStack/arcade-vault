@@ -132,7 +132,7 @@ export function GamePlayer({ game }: { game: Game }) {
           defaultName={user ? user.name : "INVITADO"}
           onSave={(name) => saveScore({ game: game.id, name, score })}
           onRestart={restart}
-          onExit={() => router.push("/")}
+          onExit={() => router.push("/biblioteca")}
         />
       )}
     </div>

@@ -172,7 +172,7 @@ export function HallOfFame() {
       </div>
 
       <div className="mt-8 text-center">
-        <Link href="/" className={buttonStyles({ size: "lg" })}>
+        <Link href="/biblioteca" className={buttonStyles({ size: "lg" })}>
           VOLVER A LA BIBLIOTECA
         </Link>
       </div>
