@@ -22,7 +22,10 @@ export default function NotFound() {
         CARTUCHO NO ENCONTRADO<span className="blink">_</span>
       </p>
 
-      <Link href="/" className={buttonStyles({ size: "lg", className: "mt-10" })}>
+      <Link
+        href="/biblioteca"
+        className={buttonStyles({ size: "lg", className: "mt-10" })}
+      >
         VOLVER AL VAULT
       </Link>
     </div>

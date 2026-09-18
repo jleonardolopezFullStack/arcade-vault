@@ -525,6 +525,125 @@
     animation: spinpix 0.6s steps(8) infinite;
     clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   }
+
+  /* ===== landing (spec 02) =====
+     Solo lo que Tailwind no expresa con comodidad. Rejillas, tipografía,
+     bordes y resplandores de hover van en utilidades, en components/home/. */
+
+  /* Entrada de las secciones al hacer scroll. La clase `in` la añade
+     components/home/reveal.tsx desde un IntersectionObserver. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity 600ms ease,
+      transform 600ms ease;
+  }
+  .reveal.in {
+    opacity: 1;
+    transform: none;
+  }
+  /* Si el observador no llega a ejecutarse, el contenido quedaría invisible:
+     con movimiento reducido se degrada a «todo visible», sin transición. */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* Siluetas pixel flotantes del hero. Los SVG llevan su relleno en el propio
+     marcado; el `color` de aquí solo alimenta el drop-shadow. */
+  .home-silos .silo {
+    position: absolute;
+    filter: drop-shadow(0 0 10px currentColor);
+    animation: float 6s ease-in-out infinite;
+    image-rendering: pixelated;
+  }
+  .home-silos .s1 {
+    top: 14%;
+    left: 8%;
+    width: 80px;
+    color: var(--cyan);
+  }
+  .home-silos .s2 {
+    top: 22%;
+    right: 10%;
+    width: 72px;
+    color: var(--magenta);
+    animation-delay: -1.5s;
+  }
+  .home-silos .s3 {
+    bottom: 18%;
+    left: 12%;
+    width: 88px;
+    color: var(--yellow);
+    animation-delay: -3s;
+  }
+  .home-silos .s4 {
+    bottom: 22%;
+    right: 14%;
+    width: 60px;
+    color: var(--green);
+    animation-delay: -4.5s;
+  }
+  /* s5, s7 y s8 usan colores decorativos de un solo uso: no son tokens del
+     tema y no entran en @theme inline. */
+  .home-silos .s5 {
+    top: 38%;
+    left: 4%;
+    width: 70px;
+    color: #aa00ff;
+    animation-delay: -2s;
+  }
+  .home-silos .s6 {
+    top: 8%;
+    left: 46%;
+    width: 44px;
+    color: var(--gold);
+    animation-delay: -3.5s;
+  }
+  .home-silos .s7 {
+    bottom: 12%;
+    left: 42%;
+    width: 52px;
+    color: #ff3060;
+    animation-delay: -1s;
+  }
+  .home-silos .s8 {
+    top: 50%;
+    right: 4%;
+    width: 60px;
+    color: #00d4ff;
+    animation-delay: -5s;
+  }
+
+  /* Degradados recortados sobre el texto: background-clip no se expresa bien
+     con utilidades porque cada uno lleva además su propio drop-shadow.
+     Ojo: `background-image`, no el atajo `background`, que reiniciaría el
+     background-clip heredado de .grad-text. */
+  .grad-text {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .grad-cyan {
+    background-image: linear-gradient(180deg, var(--cyan), #4dd0e1);
+    filter: drop-shadow(0 0 14px rgba(0, 245, 255, 0.45));
+  }
+  .grad-magenta {
+    background-image: linear-gradient(180deg, var(--magenta), #ff6b9e);
+    filter: drop-shadow(0 0 14px rgba(255, 0, 110, 0.45));
+  }
+  .grad-yellow {
+    background-image: linear-gradient(180deg, #fff, var(--yellow));
+    filter: drop-shadow(0 0 12px rgba(245, 255, 0, 0.4));
+  }
+  .grad-green {
+    background-image: linear-gradient(180deg, #fff, var(--green));
+    filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.5));
+  }
 }
 
 /* ===== keyframes ===== */
@@ -627,5 +746,32 @@
 @keyframes spinpix {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(2deg);
+  }
+}
+
+@keyframes bounce {
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@keyframes tickin {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }

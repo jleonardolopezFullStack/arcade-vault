@@ -95,7 +95,10 @@ export default async function GameDetailPage({
             >
               ▶ JUGAR AHORA
             </Link>
-            <Link href="/" className={buttonStyles({ variant: "ghost", size: "lg" })}>
+            <Link
+              href="/biblioteca"
+              className={buttonStyles({ variant: "ghost", size: "lg" })}
+            >
               VOLVER AL VAULT
             </Link>
           </div>
