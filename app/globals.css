@@ -644,6 +644,63 @@
     background-image: linear-gradient(180deg, #fff, var(--green));
     filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.5));
   }
+
+  /* ===== acerca de (spec 03) =====
+     Solo lo que Tailwind no expresa con comodidad: el degradado recortado del
+     título, el escalonado por :nth-child del terminal y las dos animaciones
+     con estado (shake del formulario inválido, parpadeo de los píxeles).
+     Rejillas, bordes, LEDs y el marco discontinuo del formulario van en
+     utilidades, en components/about/. */
+
+  /* Pareja de .grad-text. No reutiliza .grad-cyan: el título de /acerca-de va
+     de blanco a cian al 80%, no de cian a #4dd0e1. */
+  .grad-about {
+    background-image: linear-gradient(180deg, #fff, var(--cyan) 80%);
+    filter: drop-shadow(0 0 14px rgba(0, 245, 255, 0.4));
+  }
+
+  /* El formulario se agita cuando falta algún campo. La clase la pone y quita
+     components/about/contact-form.tsx durante 400 ms. */
+  .shake {
+    animation: shake 400ms;
+  }
+
+  /* Cada línea del terminal entra 180 ms después de la anterior. El retardo va
+     por :nth-child porque el marcado es fijo y así no hay estado en React ni
+     temporizadores: el escalonado es puramente CSS. */
+  .term-lines > * {
+    opacity: 0;
+    animation: termline 260ms ease-out forwards;
+  }
+  .term-lines > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .term-lines > *:nth-child(2) {
+    animation-delay: 180ms;
+  }
+  .term-lines > *:nth-child(3) {
+    animation-delay: 360ms;
+  }
+  .term-lines > *:nth-child(4) {
+    animation-delay: 540ms;
+  }
+  .term-lines > *:nth-child(5) {
+    animation-delay: 720ms;
+  }
+  .term-lines > *:nth-child(6) {
+    animation-delay: 900ms;
+  }
+  .term-lines > *:nth-child(7) {
+    animation-delay: 1080ms;
+  }
+  /* Con movimiento reducido el terminal aparece entero y de golpe: el mensaje
+     importa más que la puesta en escena. */
+  @media (prefers-reduced-motion: reduce) {
+    .term-lines > * {
+      opacity: 1;
+      animation: none;
+    }
+  }
 }
 
 /* ===== keyframes ===== */
@@ -769,6 +826,45 @@
   from {
     opacity: 0;
     transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Formulario de contacto rechazado en cliente: 0.4 s de traslación horizontal. */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* Píxeles de la banda divisoria de /acerca-de. */
+@keyframes pxblink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* Entrada de cada línea del terminal del formulario. */
+@keyframes termline {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
