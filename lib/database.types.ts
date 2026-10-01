@@ -7,6 +7,7 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[];
+
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -15,27 +16,280 @@ export type Database = {
   };
   public: {
     Tables: {
-      [_ in never]: never;
+      games: {
+        Row: {
+          cat: Database["public"]["Enums"]["game_category"];
+          color: Database["public"]["Enums"]["game_color"];
+          cover: string;
+          created_at: string;
+          id: string;
+          leaderboard_size: number;
+          long: string;
+          max_score: number;
+          score_label: string;
+          score_order: Database["public"]["Enums"]["score_order"];
+          scores_table: string;
+          short: string;
+          sort_order: number;
+          title: string;
+        };
+        Insert: {
+          cat: Database["public"]["Enums"]["game_category"];
+          color: Database["public"]["Enums"]["game_color"];
+          cover: string;
+          created_at?: string;
+          id: string;
+          leaderboard_size?: number;
+          long: string;
+          max_score?: number;
+          score_label?: string;
+          score_order?: Database["public"]["Enums"]["score_order"];
+          scores_table: string;
+          short: string;
+          sort_order: number;
+          title: string;
+        };
+        Update: {
+          cat?: Database["public"]["Enums"]["game_category"];
+          color?: Database["public"]["Enums"]["game_color"];
+          cover?: string;
+          created_at?: string;
+          id?: string;
+          leaderboard_size?: number;
+          long?: string;
+          max_score?: number;
+          score_label?: string;
+          score_order?: Database["public"]["Enums"]["score_order"];
+          scores_table?: string;
+          short?: string;
+          sort_order?: number;
+          title?: string;
+        };
+        Relationships: [];
+      };
+      scores_bloque_buster: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          score: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          score: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          score?: number;
+        };
+        Relationships: [];
+      };
+      scores_caida: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          score: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          score: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          score?: number;
+        };
+        Relationships: [];
+      };
+      scores_duelo_pixel: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          score: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          score: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          score?: number;
+        };
+        Relationships: [];
+      };
+      scores_gloton: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          score: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          score: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          score?: number;
+        };
+        Relationships: [];
+      };
+      scores_invasores: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          score: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          score: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          score?: number;
+        };
+        Relationships: [];
+      };
+      scores_ranaria: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          score: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          score: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          score?: number;
+        };
+        Relationships: [];
+      };
+      scores_rocas: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          score: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          score: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          score?: number;
+        };
+        Relationships: [];
+      };
+      scores_serpentina: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          score: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          score: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          score?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: {
-      [_ in never]: never;
+      game_stats: {
+        Row: {
+          best: number | null;
+          game_id: string | null;
+          plays: number | null;
+        };
+        Relationships: [];
+      };
+      leaderboard: {
+        Row: {
+          created_at: string | null;
+          game_id: string | null;
+          id: string | null;
+          name: string | null;
+          score: number | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
-      [_ in never]: never;
+      submit_score: {
+        Args: { p_game: string; p_name: string; p_score: number };
+        Returns: undefined;
+      };
+      top_scores: {
+        Args: { p_game?: string };
+        Returns: {
+          created_at: string;
+          game_id: string;
+          name: string;
+          rank: number;
+          score: number;
+        }[];
+      };
     };
     Enums: {
-      [_ in never]: never;
+      game_category: "ARCADE" | "PUZZLE" | "SHOOTER" | "VERSUS";
+      game_color: "cyan" | "magenta" | "yellow" | "green";
+      score_order: "asc" | "desc";
     };
     CompositeTypes: {
       [_ in never]: never;
     };
   };
 };
+
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<
   keyof Database,
   "public"
 >];
+
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
@@ -64,6 +318,7 @@ export type Tables<
       ? R
       : never
     : never;
+
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
@@ -87,6 +342,7 @@ export type TablesInsert<
       ? I
       : never
     : never;
+
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
@@ -110,6 +366,7 @@ export type TablesUpdate<
       ? U
       : never
     : never;
+
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
@@ -125,6 +382,7 @@ export type Enums<
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never;
+
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
@@ -141,8 +399,13 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never;
+
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      game_category: ["ARCADE", "PUZZLE", "SHOOTER", "VERSUS"],
+      game_color: ["cyan", "magenta", "yellow", "green"],
+      score_order: ["asc", "desc"],
+    },
   },
 } as const;
