@@ -44,13 +44,15 @@ Conectado desde SPEC 04. Dos variables, ambas en `.env.local` (ignorado) y docum
 
 Usa siempre /frontend-design para crear la interfaz de usuario.
 
+`/spec-game` (en `.claude/skills/spec-game/`, con copia en `.agents/skills/`) diseña el spec de un juego nuevo —motor en `lib/games/` y, si el concepto no está en el catálogo, su leaderboard en Supabase—. Pregunta de forma guiada, detecta el estado real de `public.games` y escribe en `specs/`; **no escribe código**. Implementa después con `/spec-impl`.
+
 ## State of the project
 
 The Next app is still the untouched `create-next-app` scaffold: `app/layout.tsx` (Geist fonts, `metadata` still says "Create Next App"), `app/page.tsx`, `app/globals.css`. **Nothing of Arcade Vault is implemented yet** — the first real work replaces this scaffold wholesale.
 
 **Arcade Vault** (README, Spanish) is a platform to play games online and compete for high scores. UI copy is Spanish.
 
-The README calls for a spec-driven workflow (`/spec` then `/spec-impl`, from `npx skills@latest add Klerith/fernando-skills`). Those skills are **not installed** in this environment — install them before assuming the commands exist.
+The README calls for a spec-driven workflow (`/spec` then `/spec-impl`, from `npx skills@latest add Klerith/fernando-skills`). Both **are** installed, in `.claude/skills/` and mirrored in `.agents/skills/` (tracked in `skills-lock.json`); the six specs in `specs/` came out of them. For a new game use `/spec-game` instead of `/spec` — it is the same flow with the catalog, the engine contract and the leaderboard migration already baked in.
 
 ## Design prototype — the spec source
 

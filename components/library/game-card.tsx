@@ -1,20 +1,15 @@
 "use client";
-
 import Link from "next/link";
 import { useRef } from "react";
-
 import { buttonStyles, type ButtonVariant } from "@/components/ui/button";
-import type { Game } from "@/lib/data";
+import type { GameColor, GameWithStats } from "@/lib/catalog";
 import { formatScore } from "@/lib/format";
-
 // El prototipo solo tiene variantes magenta y amarilla; el resto cae en cian.
-function playVariant(color: Game["color"]): ButtonVariant {
+function playVariant(color: GameColor): ButtonVariant {
   return color === "magenta" || color === "yellow" ? color : "cyan";
 }
-
-export function GameCard({ game }: { game: Game }) {
+export function GameCard({ game }: { game: GameWithStats }) {
   const tiltRef = useRef<HTMLAnchorElement>(null);
-
   const onMove = (e: React.MouseEvent) => {
     const el = tiltRef.current;
     if (!el) return;
@@ -23,12 +18,10 @@ export function GameCard({ game }: { game: Game }) {
     const py = (e.clientY - r.top) / r.height - 0.5;
     el.style.transform = `translateY(-6px) rotateX(${-py * 6}deg) rotateY(${px * 8}deg)`;
   };
-
   const onLeave = () => {
     const el = tiltRef.current;
     if (el) el.style.transform = "";
   };
-
   return (
     <Link
       ref={tiltRef}
@@ -43,18 +36,18 @@ export function GameCard({ game }: { game: Game }) {
           {game.cat}
         </div>
       </div>
-
       <div className="flex flex-col gap-1.5">
         <div className="font-pixel text-[13px] tracking-[0.06em] text-ink">
           {game.title}
         </div>
         <div className="min-h-9 text-xs text-ink-dim">{game.short}</div>
-
         <div className="mt-1 flex items-center justify-between gap-2.5">
           <div className="flex flex-col font-mono text-[10px] tracking-[0.08em] text-ink-faint uppercase">
             <span>MEJOR PUNTUACIÓN</span>
+            {/* best es null mientras nadie haya jugado. Un 0 mentiría: diría
+                que alguien lo intentó y no puntuó. */}
             <b className="font-pixel text-xs tracking-[0.06em] text-yellow [text-shadow:0_0_6px_rgba(245,255,0,0.6)]">
-              {formatScore(game.best)}
+              {game.best === null ? "—" : formatScore(game.best)}
             </b>
           </div>
           <span className={buttonStyles({ variant: playVariant(game.color) })}>
