@@ -4,7 +4,7 @@
 import { createAsteroidesEngine } from "./asteroides";
 import type { GameEngineFactory } from "./types";
 
-// Clave = Game["id"] de lib/data.ts.
+// Clave = Game["id"] del catálogo (@/lib/catalog).
 const ENGINES: Record<string, GameEngineFactory> = {
   rocas: createAsteroidesEngine,
 };

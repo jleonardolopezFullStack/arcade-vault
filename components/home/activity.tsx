@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { HOME_SECTION, SectionHead } from "@/components/home/section-head";
 import { Panel } from "@/components/ui/panel";
-import type { GameColor } from "@/lib/data";
+import type { GameColor } from "@/lib/catalog";
 import { formatScore } from "@/lib/format";
 import { ACTIVITY, TOP_PLAYERS } from "@/lib/home-data";
 

@@ -1,4 +1,4 @@
-import type { GameColor } from "@/lib/data";
+import type { GameColor } from "@/lib/catalog";
 
 /**
  * Contenido estático de /acerca-de, portado 1:1 de

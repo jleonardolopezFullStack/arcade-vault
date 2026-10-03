@@ -158,22 +158,33 @@ export async function getGame(
  * Solo los ids, para `generateStaticParams()`.
  *
  * Corre en build, donde no hay petición: por eso usa el cliente sin cookies.
- * Si la base no responde aquí, el build debe fallar —y falla, porque esta es la
- * única lectura del módulo que lanza en vez de devolver `Result`—: prerrenderizar
- * cero rutas en silencio dejaría la aplicación entera en 404.
+ *
+ * **No lanza.** Lanzar era lo primero que se intentó —un build sin catálogo no
+ * debería pasar desapercibido— pero la excepción sale de `buildAppStaticPaths`,
+ * fuera del árbol de React, así que ni la rama de `SignalLost` de la página ni
+ * un `error.tsx` del segmento llegan a verla: el detalle respondía 500 crudo.
+ *
+ * Devolver la lista vacía es lo que permite que la ruta se resuelva bajo
+ * demanda (`dynamicParams = true`) y que la página pinte «SEÑAL PERDIDA» como
+ * las demás. El fallo no es silencioso: queda en el log del build.
  */
 export async function listGameIds(): Promise<string[]> {
-  const supabase = createReadClient();
-  const { data, error } = await supabase
-    .from("games")
-    .select("id")
-    .order("sort_order");
-  if (error) {
-    throw new Error(
-      `No se pudo leer el catálogo para prerrenderizar las rutas: ${error.message}`,
+  try {
+    const supabase = createReadClient();
+    const { data, error } = await supabase
+      .from("games")
+      .select("id")
+      .order("sort_order");
+    if (error) throw error;
+    return data.map((row) => row.id);
+  } catch (cause) {
+    console.error(
+      "[catalog.listGameIds] no se pudo leer el catálogo para prerrenderizar " +
+        "las rutas de juego; se resolverán bajo demanda:",
+      cause,
     );
+    return [];
   }
-  return data.map((row) => row.id);
 }
 // --- Estadísticas -----------------------------------------------------------
 //

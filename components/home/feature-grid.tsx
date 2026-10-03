@@ -1,6 +1,6 @@
 import { FeatureIcon } from "@/components/home/feature-icon";
 import { HOME_SECTION, SectionHead } from "@/components/home/section-head";
-import type { GameColor } from "@/lib/data";
+import type { GameColor } from "@/lib/catalog";
 import { FEATURES } from "@/lib/home-data";
 
 // El color tiñe el icono, el título y el borde/resplandor del hover, todos
