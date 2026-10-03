@@ -1,25 +1,18 @@
 # SPEC 07 — «CAÍDA» jugable: el tetris de referencia dentro del reproductor
 
 **Estado:** Borrador
-**Depende de:** SPEC 05, SPEC 06 (pendiente de terminar)
+**Depende de:** SPEC 05, SPEC 06
 **Fecha:** 2026-10-01
 
 **Objetivo:** Portar el juego de `references/RRO5vePTlqkYrGHjYdtf_started-games/03-tetris/game.js` a un motor TypeScript en `lib/games/piezas/` que el reproductor monte en `/juegos/caida/jugar`, ampliando el contrato con una métrica de líneas que el HUD de la plataforma sepa pintar.
 
 ---
 
-## 0. Requisito previo
+## 0. Terreno que este spec da por hecho
 
-Las tres migraciones de SPEC 06 están aplicadas (`catalogo_y_marcadores`, `siembra_catalogo`, `vistas_y_funciones`) y la ficha `caida` existe en `public.games` con su tabla `scores_caida`, su rama en la vista `leaderboard` y sus reglas. **Este spec no toca Supabase.**
+SPEC 06 está **implementado**: las tres migraciones aplicadas, la ficha `caida` en `public.games` con su tabla `scores_caida`, su rama en la vista `leaderboard` y sus reglas, y las cinco pantallas leyendo de la base. **Este spec no toca Supabase.**
 
-Lo que sigue pendiente de SPEC 06 son sus pasos 8 a 14: el detalle, el reproductor, la Server Action de guardado, el Salón de la Fama, la home, el estado de error y la retirada de `lib/data.ts`, `lib/scores.ts` y `lib/local-scores.ts`. Hoy solo `/biblioteca` lee del catálogo.
-
-Consecuencias concretas para este spec:
-
-- **El guardado de la marca sigue siendo `localStorage['av_scores']`**, porque es lo que hace hoy `components/player/game-player.tsx` con `saveScore()`. Cuando SPEC 06 remate sus pasos 9 y 10, `caida` hereda la Server Action sin tocar una línea de este motor: el reproductor es compartido.
-- **Dos criterios de aceptación son inverificables hasta entonces** y están marcados como tales en el apartado 4: que la marca aparezca en el ranking de `/juegos/caida` y en la pestaña CAÍDA de `/salon`. Hoy esas dos pantallas pintan `seededScores()`, no la base.
-
-No se remata SPEC 06 aquí. Su plan ya está escrito y aprobado.
+Lo que eso le regala a CAÍDA, sin escribir una línea: el guardado real de la marca por la Server Action `submitScore`, el ranking de `/juegos/caida` y su pestaña en `/salon` leyendo de `top_scores()`, y el modal de fin de partida con sus tres estados. El reproductor es compartido, así que el motor nuevo hereda todo eso por el hecho de registrarse.
 
 ---
 
@@ -42,7 +35,6 @@ No se remata SPEC 06 aquí. Su plan ya está escrito y aprobado.
 
 - **Supabase.** Ni migración, ni tabla, ni rama de vista, ni fila de catálogo, ni tipos regenerados. `caida` ya está sembrada y sus reglas (`score_order` `desc`, `score_label` `PUNTOS`, `leaderboard_size` 12, `max_score` 10 000 000) son las correctas para un marcador de puntos: **no hay micro-migración**.
 - **`submit_score`, `top_scores` y `game_stats`.** Están dirigidos por el catálogo y un motor nuevo no los cambia. No se editan.
-- **Rematar SPEC 06.** Sus pasos 8 a 14 son suyos.
 - **Los otros seis motores.** `bloque-buster`, `serpentina`, `gloton`, `invasores`, `ranaria` y `duelo-pixel` siguen en «PRÓXIMAMENTE».
 - **Editar el juego de referencia.** `references/RRO5vePTlqkYrGHjYdtf_started-games/03-tetris/` se porta, no se modifica.
 - **El conmutador de tema y su `localStorage['tetris-theme']`** del original: es contaminación de plataforma y desaparece en el porte.
@@ -57,7 +49,7 @@ No se remata SPEC 06 aquí. Su plan ya está escrito y aprobado.
 
 ## 2. Modelo de datos
 
-No hay persistencia nueva: la marca se sigue guardando con `saveScore()` y `game: "caida"`. Lo que sí cambia es el contrato, y lo que es nuevo son las constantes portadas.
+No hay persistencia nueva: la marca la guarda la Server Action `submitScore` de SPEC 06 con `game: "caida"`, igual que ROCAS. Lo que sí cambia es el contrato, y lo que es nuevo son las constantes portadas.
 
 ### 2.1 Lo que la base ya tiene
 
@@ -235,8 +227,8 @@ Cada paso deja el proyecto compilando. Hasta el paso 6 la aplicación se comport
 - [ ] No hay ninguna migración nueva en `supabase/migrations/`, y `select count(*) from public.games` sigue devolviendo 8.
 - [ ] `/juegos/caida` resuelve **después de un `npm run build`**: la ruta sale de `generateStaticParams`, no del servidor de desarrollo.
 - [ ] `npm run lint` y `npm run build` terminan sin errores ni avisos nuevos.
-- [ ] **(Inverificable hasta que SPEC 06 remate sus pasos 8 a 11.)** La marca guardada aparece en el ranking de `/juegos/caida`.
-- [ ] **(Inverificable hasta que SPEC 06 remate sus pasos 8 a 11.)** La marca guardada aparece en la pestaña CAÍDA de `/salon`.
+- [ ] La marca guardada aparece en el ranking de `/juegos/caida` tras recargar, y sigue ahí al vaciar el `localStorage`.
+- [ ] La marca guardada aparece en la pestaña CAÍDA de `/salon`, resaltada si coincide con el alias de sesión.
 
 ---
 
@@ -246,7 +238,7 @@ Cada paso deja el proyecto compilando. Hasta el paso 6 la aplicación se comport
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | El juego vive en la ficha **`caida`**                               | Crear una ficha nueva y dejar `caida` en «PRÓXIMAMENTE»                  | Decisión del usuario. La ficha ya describe este juego hasta el detalle de las diez líneas, y su tabla, su rama de vista y su portada existen desde SPEC 06. Una ficha nueva costaría una migración, una rama de vista y una clase CSS para duplicar lo que ya hay. |
 | **Un solo spec, sin SQL**                                           | Un spec de motor más otro de leaderboard                                 | No hay nada que migrar: las reglas sembradas (`desc`, `PUNTOS`, 12, 10 000 000) son las correctas para un marcador de puntos.                                                                                                                                      |
-| **Escribirlo con SPEC 06 a medias**                                 | Esperar a que SPEC 06 termine, o rematarlo aquí                          | Decisión del usuario. El motor no depende de los pasos pendientes: guardar funciona hoy por `localStorage` y heredará la Server Action sin tocarse. Coste: dos criterios quedan aparcados.                                                                         |
+| **Escrito con SPEC 06 a medias, implementado después**                                 | Esperar a que SPEC 06 terminara antes de escribirlo                          | Decisión del usuario. Se redactó con SPEC 06 en ámbar y dos criterios aparcados; al implementarse SPEC 06 primero, el aparcamiento desapareció y CAÍDA hereda el guardado real sin tocar el motor.                                                                         |
 | **Porte 1:1 con repintado**                                         | Reajustar la dificultad, o reinterpretar                                 | Decisión del usuario, y es lo que hizo SPEC 05 con ROCAS. La curva de velocidad y la puntuación están calibradas; tocarlas obligaría a revalidar el juego entero.                                                                                                  |
 | **La tuerca se conserva**                                           | Siete piezas estándar                                                    | Decisión del usuario. Es porte 1:1 y es el rasgo que distingue a este tetris. Coste: el juego es más difícil que el clásico y quien lo pruebe puede tomarlo por un fallo.                                                                                          |
 | `GameSnapshot` gana **`lines?` opcional**                           | Dejar las líneas solo en el canvas, o sustituir `lives` por `lines`      | Decisión del usuario. Es aditivo: `asteroides` no se toca y el HUD no necesita rótulos por juego. Lo descartado dejaba al HUD de React mintiendo, o obligaba a rotular los nueve juegos.                                                                           |
@@ -276,6 +268,4 @@ Cada paso deja el proyecto compilando. Hasta el paso 6 la aplicación se comport
 
 7. **Deriva respecto al original.** Al repartir `game.js` en cuatro ficheros, repintar las piezas y cambiar la unidad del `dt`, el motor deja de ser comparable línea a línea con su referencia. **Mitigación:** anotar en el código qué se cambió a propósito —colores, ausencia de globals, unidad del tiempo, pausa, reinicio— para que la próxima comparación no confunda un porte con un fallo.
 
-8. **Guardar sigue siendo local.** Mientras SPEC 06 no remate sus pasos 9 y 10, la marca de CAÍDA vive en `localStorage['av_scores']` y se perderá al vaciar el almacenamiento —y además el paso 14 de SPEC 06 borra `lib/local-scores.ts`, que es quien la lee—. Es lo aceptado en el apartado 0, pero conviene no enseñar el juego prometiendo un ranking que todavía no persiste.
-
-9. **Rendimiento dentro del marco CRT.** El original no se probó con scanlines, ruido y filtros CSS por encima, y aquí se redibujan 200 celdas, la rejilla y la pieza fantasma en cada fotograma. Si va a tirones, el sospechoso es el efecto CRT, no el juego.
+8. **Rendimiento dentro del marco CRT.** El original no se probó con scanlines, ruido y filtros CSS por encima, y aquí se redibujan 200 celdas, la rejilla y la pieza fantasma en cada fotograma. Si va a tirones, el sospechoso es el efecto CRT, no el juego.
