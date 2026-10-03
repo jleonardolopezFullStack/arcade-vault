@@ -1,29 +1,35 @@
 "use client";
-
 import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { formatScore } from "@/lib/format";
-
+import { SCORE_LIMITS, type SubmitScoreState } from "@/lib/submit-score";
 type Props = {
   score: number;
   defaultName: string;
+  /** Lo gobierna el reproductor, que es quien llama a la Server Action. */
+  state: SubmitScoreState;
   onSave: (name: string) => void;
   onRestart: () => void;
   onExit: () => void;
 };
-
+/** Qué dice el botón según en qué punto del guardado estamos. */
+const SAVE_LABEL: Record<SubmitScoreState["status"], string> = {
+  idle: "GUARDAR PUNTUACIÓN",
+  saving: "GUARDANDO…",
+  ok: "GUARDAR PUNTUACIÓN",
+  error: "REINTENTAR",
+};
 export function GameOverModal({
   score,
   defaultName,
+  state,
   onSave,
   onRestart,
   onExit,
 }: Props) {
   const [name, setName] = useState(defaultName);
-  const [saved, setSaved] = useState(false);
-
+  const saving = state.status === "saving";
   return (
     <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/70 p-5">
       <Panel
@@ -41,41 +47,55 @@ export function GameOverModal({
         >
           FIN DEL JUEGO
         </h2>
-
         <div className="font-mono text-[11px] tracking-[0.2em] text-ink-faint uppercase">
           PUNTUACIÓN FINAL
         </div>
         <div className="mt-4 mb-1.5 font-pixel text-4xl text-yellow [text-shadow:0_0_16px_rgba(245,255,0,0.6)]">
           {formatScore(score)}
         </div>
-
-        {saved ? (
-          <div className="mt-3.5 inline-block w-0 overflow-hidden border-r-2 border-green font-pixel text-[11px] whitespace-nowrap text-green [animation:typewriter_1.6s_steps(22)_forwards,caret_0.8s_steps(1)_infinite] [text-shadow:0_0_8px_var(--green)]">
-            ▸ PUNTUACIÓN GUARDADA_
-          </div>
-        ) : (
-          <div className="mt-[22px] mb-3 flex gap-2">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value.toUpperCase().slice(0, 10))}
-              placeholder="TUS INICIALES"
-              aria-label="Tus iniciales"
-              className="h-11 flex-1 border border-line bg-bg px-3 font-mono outline-0 focus:border-cyan focus:shadow-[0_0_10px_rgba(0,245,255,0.35)]"
-            />
-            <Button
-              variant="yellow"
-              onClick={() => {
-                onSave(name);
-                setSaved(true);
-              }}
-            >
-              GUARDAR PUNTUACIÓN
-            </Button>
-          </div>
-        )}
-
+        {/* Guardar ya no es instantáneo: va a la base por una Server Action. */}
+        <div aria-live="polite">
+          {state.status === "ok" ? (
+            <div className="mt-3.5 inline-block w-0 overflow-hidden border-r-2 border-green font-pixel text-[11px] whitespace-nowrap text-green [animation:typewriter_1.6s_steps(22)_forwards,caret_0.8s_steps(1)_infinite] [text-shadow:0_0_8px_var(--green)]">
+              ▸ PUNTUACIÓN GUARDADA_
+            </div>
+          ) : (
+            <>
+              <div className="mt-[22px] mb-3 flex gap-2">
+                <input
+                  value={name}
+                  onChange={(e) =>
+                    setName(
+                      e.target.value
+                        .toUpperCase()
+                        .slice(0, SCORE_LIMITS.nameMax),
+                    )
+                  }
+                  disabled={saving}
+                  placeholder="TUS INICIALES"
+                  aria-label="Tus iniciales"
+                  className="h-11 flex-1 border border-line bg-bg px-3 font-mono outline-0 focus:border-cyan focus:shadow-[0_0_10px_rgba(0,245,255,0.35)] disabled:opacity-50"
+                />
+                <Button
+                  variant="yellow"
+                  disabled={saving}
+                  onClick={() => onSave(name)}
+                >
+                  {SAVE_LABEL[state.status]}
+                </Button>
+              </div>
+              {state.status === "error" && (
+                <p className="mt-0 mb-3 font-mono text-[11px] leading-[1.6] text-magenta">
+                  {state.message}
+                </p>
+              )}
+            </>
+          )}
+        </div>
         <div className="mt-[18px] flex flex-wrap justify-center gap-2.5">
-          <Button onClick={onRestart}>JUGAR DE NUEVO</Button>
+          <Button onClick={onRestart} disabled={saving}>
+            JUGAR DE NUEVO
+          </Button>
           <Button variant="magenta" onClick={onExit}>
             VOLVER AL VAULT
           </Button>

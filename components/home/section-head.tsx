@@ -1,4 +1,4 @@
-import type { GameColor } from "@/lib/data";
+import type { GameColor } from "@/lib/catalog";
 
 /** Caja de las secciones con ancho contenido (`.home-section` del prototipo). */
 export const HOME_SECTION = "mx-auto my-20 max-w-[1320px] px-8";

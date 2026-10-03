@@ -1,11 +1,11 @@
-import type { GameColor } from "@/lib/data";
+import type { GameColor } from "@/lib/catalog";
 
 /**
  * Contenido de escaparate de la landing, portado 1:1 de
  * references/templates/home-about/home.jsx.
  *
  * Son constantes fijas a propósito: el ticker y el top de jugadores no leen de
- * localStorage, ni de seededScores, ni de ningún backend. Cuando haya datos
+ * localStorage, ni de marcas fabricadas, ni de ningún backend. Cuando haya datos
  * reales, este es el único archivo que hay que tocar.
  *
  * Los seis juegos del rail no se duplican aquí: salen de GAMES.slice(0, 6).

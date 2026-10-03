@@ -1,26 +1,22 @@
 "use client";
-
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-
+import { submitScore } from "@/app/juegos/[id]/jugar/actions";
 import { GameOverModal } from "@/components/player/game-over-modal";
 import { Button } from "@/components/ui/button";
-import type { Game } from "@/lib/data";
+import type { Game } from "@/lib/catalog";
 import { formatScore } from "@/lib/format";
 import { isTypingTarget } from "@/lib/games/input";
 import { getEngineFactory } from "@/lib/games/registry";
 import type { GameEngine, GameSnapshot } from "@/lib/games/types";
-import { saveScore } from "@/lib/local-scores";
 import { useSession } from "@/lib/session-context";
-
+import { SUBMIT_SCORE_IDLE, type SubmitScoreState } from "@/lib/submit-score";
 // El HUD arranca con el estado inicial de una partida; el motor lo corrige en
 // su primer fotograma.
 const INITIAL_SNAPSHOT: GameSnapshot = { score: 0, lives: 3, level: 1 };
-
 const HUD_LABEL =
   "font-mono text-[10px] tracking-[0.14em] text-ink-faint uppercase";
 const HUD_VALUE = "font-pixel text-base";
-
 /** Cartel dentro de la pantalla: mismos roles tipográficos que «EN PAUSA». */
 function CrtNotice({
   eyebrow,
@@ -54,25 +50,24 @@ function CrtNotice({
     </div>
   );
 }
-
 export function GamePlayer({ game }: { game: Game }) {
   const router = useRouter();
   const { user } = useSession();
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
-
   const [snapshot, setSnapshot] = useState<GameSnapshot>(INITIAL_SNAPSHOT);
   const [paused, setPaused] = useState(false);
   const [over, setOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  // Guardar la marca ya no es instantáneo: hay que pintar guardando, guardado
+  // y error con reintento.
+  const [saveState, setSaveState] =
+    useState<SubmitScoreState>(SUBMIT_SCORE_IDLE);
   // null mientras no se sabe: la consulta es de cliente, nunca del render del
   // servidor.
   const [coarsePointer, setCoarsePointer] = useState<boolean | null>(null);
-
   const factory = getEngineFactory(game.id);
   const playable = factory !== null && coarsePointer === false;
-
   useEffect(() => {
     const query = window.matchMedia("(pointer: coarse)");
     const sync = () => setCoarsePointer(query.matches);
@@ -80,23 +75,21 @@ export function GamePlayer({ game }: { game: Game }) {
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
   }, []);
-
   // Montaje del motor. Pausa y game over se manejan con métodos, nunca
   // remontando (remontar perdería la partida).
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!factory || !playable || !canvas) return;
-
     const engine = factory(canvas, {
       onSnapshot: setSnapshot,
       onGameOver: (score) => {
         setFinalScore(score);
+        setSaveState(SUBMIT_SCORE_IDLE);
         setOver(true);
       },
     });
     engineRef.current = engine;
     engine.start();
-
     // Imprescindible: sin esto el doble montaje de React en modo estricto deja
     // dos bucles y dos juegos de oyentes de teclado vivos.
     return () => {
@@ -104,11 +97,9 @@ export function GamePlayer({ game }: { game: Game }) {
       engineRef.current = null;
     };
   }, [factory, playable]);
-
   const exit = useCallback(() => {
     router.push(`/juegos/${game.id}`);
   }, [router, game.id]);
-
   const togglePause = useCallback(() => {
     if (over) return;
     const engine = engineRef.current;
@@ -120,21 +111,31 @@ export function GamePlayer({ game }: { game: Game }) {
       setPaused(true);
     }
   }, [over, paused]);
-
   const end = useCallback(() => {
     engineRef.current?.pause();
     setFinalScore(snapshot.score);
+    setSaveState(SUBMIT_SCORE_IDLE);
     setOver(true);
   }, [snapshot.score]);
-
   const restart = useCallback(() => {
     setSnapshot(INITIAL_SNAPSHOT);
     setFinalScore(0);
+    setSaveState(SUBMIT_SCORE_IDLE);
     setPaused(false);
     setOver(false);
     engineRef.current?.restart();
   }, []);
-
+  /**
+   * Manda la marca a la base. El reintento vuelve a entrar por aquí con el
+   * alias que haya en el modal, así que un fallo no pierde la puntuación.
+   */
+  const save = useCallback(
+    async (name: string) => {
+      setSaveState({ status: "saving" });
+      setSaveState(await submitScore(game.id, name, finalScore));
+    },
+    [game.id, finalScore],
+  );
   // Atajos de la plataforma. Las teclas de juego (flechas y espacio) las
   // captura el motor, no este componente.
   useEffect(() => {
@@ -152,7 +153,6 @@ export function GamePlayer({ game }: { game: Game }) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [playable, togglePause, exit]);
-
   return (
     <div className="fade-in mx-auto my-8 max-w-[1100px] px-6 pb-16 max-[720px]:px-4 max-[720px]:pb-8">
       <div className="mb-[18px] flex flex-wrap items-center justify-between gap-4 border border-line bg-bg-2 px-[18px] py-[14px]">
@@ -163,7 +163,6 @@ export function GamePlayer({ game }: { game: Game }) {
               {user ? user.name : "INVITADO"}
             </div>
           </div>
-
           {playable && (
             <>
               <div className="flex flex-col gap-1">
@@ -195,7 +194,6 @@ export function GamePlayer({ game }: { game: Game }) {
             </>
           )}
         </div>
-
         <div className="flex gap-2.5">
           {playable && (
             <>
@@ -212,7 +210,6 @@ export function GamePlayer({ game }: { game: Game }) {
           </Button>
         </div>
       </div>
-
       <div className="crt">
         <div className="crt-screen">
           {!factory ? (
@@ -248,7 +245,6 @@ export function GamePlayer({ game }: { game: Game }) {
               className="absolute inset-0 block h-full w-full"
             />
           )}
-
           {paused && (
             <div className="crt-content z-5 bg-black/60">
               <div>
@@ -262,7 +258,6 @@ export function GamePlayer({ game }: { game: Game }) {
             </div>
           )}
         </div>
-
         <div className="crt-bottom">
           {playable ? (
             <span className="led">SEÑAL OK</span>
@@ -273,14 +268,12 @@ export function GamePlayer({ game }: { game: Game }) {
           <span>CARGA · 1MB</span>
         </div>
       </div>
-
       {over && (
         <GameOverModal
           score={finalScore}
           defaultName={user ? user.name : "INVITADO"}
-          onSave={(name) =>
-            saveScore({ game: game.id, name, score: finalScore })
-          }
+          state={saveState}
+          onSave={save}
           onRestart={restart}
           onExit={() => router.push("/biblioteca")}
         />

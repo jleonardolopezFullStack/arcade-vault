@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-
 import { Activity } from "@/components/home/activity";
 import { FeatureGrid } from "@/components/home/feature-grid";
 import { FinalCta } from "@/components/home/final-cta";
@@ -8,7 +7,7 @@ import { Hero } from "@/components/home/hero";
 import { Pricing } from "@/components/home/pricing";
 import { Reveal } from "@/components/home/reveal";
 import { StatsBand } from "@/components/home/stats-band";
-
+import { listGames } from "@/lib/catalog";
 // La raíz es la landing: lleva el reclamo del hero en el título, no el
 // patrón «<Página> · Arcade Vault» del resto de rutas.
 export const metadata: Metadata = {
@@ -16,33 +15,30 @@ export const metadata: Metadata = {
   description:
     "Juega los mejores clásicos directamente en tu navegador. Sin descargas. Sin costo. Solo diversión.",
 };
-
 // El hero no lleva reveal: es lo primero que se ve.
-export default function Home() {
+export default async function Home() {
+  // Lo único que la home lee de la base es el rail. La banda de estadísticas y
+  // el ticker siguen siendo escaparate fijo de lib/home-data.ts.
+  const result = await listGames();
+  const rail = result.ok ? result.data.slice(0, 6) : [];
   return (
     <div className="fade-in">
       <Hero />
-
       <Reveal>
         <FeatureGrid />
       </Reveal>
-
       <Reveal>
-        <GameRail />
+        <GameRail games={rail} />
       </Reveal>
-
       <Reveal>
         <StatsBand />
       </Reveal>
-
       <Reveal>
         <Activity />
       </Reveal>
-
       <Reveal>
         <Pricing />
       </Reveal>
-
       <Reveal>
         <FinalCta />
       </Reveal>

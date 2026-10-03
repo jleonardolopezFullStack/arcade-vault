@@ -1,7 +1,7 @@
 /**
  * Los rankings, leídos de Supabase.
  *
- * Sustituye a `seededScores()` de `lib/scores.ts`, que los fabricaba con una
+ * Sustituye a las puntuaciones que se fabricaban con una
  * semilla. Ahora salen de `public.top_scores()`, que ya aplica el orden y el
  * tamaño de ranking propios de cada juego: aquí no se ordena ni se recorta
  * nada, porque hacerlo otra vez en JavaScript sería una segunda verdad que
