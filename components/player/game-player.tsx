@@ -173,14 +173,20 @@ export function GamePlayer({ game }: { game: Game }) {
                   {formatScore(snapshot.score)}
                 </div>
               </div>
+              {/* El hueco central lo decide el motor: quien cuenta líneas y no
+                  vidas —CAÍDA— emite `lines` y el rótulo cambia con él. */}
               <div className="flex flex-col gap-1">
-                <div className={HUD_LABEL}>Vidas</div>
+                <div className={HUD_LABEL}>
+                  {snapshot.lines === undefined ? "Vidas" : "Líneas"}
+                </div>
                 <div
                   className={`${HUD_VALUE} text-magenta [text-shadow:0_0_6px_rgba(255,0,110,0.5)]`}
                 >
-                  {snapshot.lives > 0
-                    ? "♥ ".repeat(snapshot.lives).trim()
-                    : "—"}
+                  {snapshot.lines !== undefined
+                    ? formatScore(snapshot.lines)
+                    : snapshot.lives > 0
+                      ? "♥ ".repeat(snapshot.lives).trim()
+                      : "—"}
                 </div>
               </div>
               <div className="flex flex-col gap-1">
