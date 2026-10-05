@@ -1,6 +1,6 @@
 # SPEC 04 — Conexión de la aplicación Next con Supabase
 
-**Estado:** Aprobado
+**Estado:** Implementado
 **Depende de:** —
 **Fecha:** 2026-09-23
 
