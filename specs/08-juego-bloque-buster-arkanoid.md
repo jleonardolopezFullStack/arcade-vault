@@ -1,6 +1,6 @@
 # SPEC 08 — «BLOQUE BUSTER» jugable: el arkanoid de referencia dentro del reproductor
 
-**Estado:** Aprobado
+**Estado:** Implementado
 **Depende de:** SPEC 05, SPEC 06
 **Fecha:** 2026-10-04
 

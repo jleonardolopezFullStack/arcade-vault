@@ -1,6 +1,6 @@
 # SPEC 03 — Pantalla «Acerca de» y formulario de contacto con Resend
 
-**Estado:** Aprobado
+**Estado:** Implementado
 **Depende de:** SPEC 01, SPEC 02
 **Fecha:** 2026-09-18
 
