@@ -107,6 +107,12 @@ Spec-driven: one spec per feature in `specs/NN-slug.md`, then implement on branc
 - `supabase-postgres-best-practices` → load before any schema/migration/RLS/SQL work.
 - **Always use `/frontend-design` for UI work.**
 
+### Subagents
+
+Live in `.claude/agents/`:
+
+- `game-planner` → decides **which game to add next** (step before `/spec-game`). Reads `registry.ts`, `specs/`, `references/` and `public.games` (select only), proposes 2-3 candidates and recommends one. Writes only to `references/game-suggestions-todo.md` (To Do of every suggestion: recomendado / sugeridos / en spec / implementados / descartados — human edits are respected) and its memory `.claude/agent-memory/game-planner/` (`memory: project`, learned preferences). Flow: `game-planner` → `/spec-game` → `/spec-impl`.
+
 ## Design prototype
 
 `references/templates/` is a standalone HTML/JSX mockup (React 18 UMD + Babel, no build) — the visual/behavioral reference all screens were ported from. **Port from it, never edit it**, and don't carry its no-bundler conventions (globals on `window`, aliased hooks, hash routing, `localStorage` scores, `seededScores`) into the app.
