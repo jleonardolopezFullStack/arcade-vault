@@ -244,6 +244,57 @@ export const LANES: readonly LaneDef[] = [
     color: "car3",
   }, // 21 ≥ 20
 ] as const;
+// ── Río vivo (SPEC 3/3) ──────────────────────────────────────────────────────
+/** Nivel a partir del cual bucean las tortugas. */
+export const DIVE_FROM_LEVEL = 2;
+/** Filas de tortugas con grupos buceadores (solo los de índice impar). */
+export const DIVE_ROWS: readonly number[] = [2, 5];
+/** Tiempo a flote, plataforma plena. */
+export const DIVE_SURFACE = 3.0;
+/** Aviso: medio hundidas y parpadeando; **siguen siendo plataforma**. */
+export const DIVE_WARN = 0.8;
+/**
+ * Bajo el agua: **no son plataforma**.
+ *
+ * Es diez veces HOP_COOLDOWN a propósito: entre el final del aviso y el
+ * hundimiento la rana tiene tiempo de sobra para saltar fuera, así que morir
+ * sobre una tortuga que se hunde es siempre un error del jugador, no del motor.
+ */
+export const DIVE_UNDER = 1.2;
+/** Duración del ciclo de buceo: 3,0 + 0,8 + 1,2 = 5,0 s. */
+export const DIVE_CYCLE = DIVE_SURFACE + DIVE_WARN + DIVE_UNDER;
+/**
+ * Desfase entre los dos grupos buceadores de un carril.
+ *
+ * **Tiene que seguir siendo la mitad de DIVE_CYCLE.** Así los dos buceadores
+ * nunca están bajo el agua a la vez —DIVE_UNDER es menor que medio ciclo— y
+ * siempre queda a flote, como mínimo, uno de ellos más los dos que no bucean.
+ * Si alguien cambia los tiempos del ciclo, esto se recalcula solo.
+ */
+export const DIVE_PHASE = DIVE_CYCLE / 2;
+/** Espera, sorteada en este intervalo, entre una mosca y la siguiente. */
+export const FLY_DELAY_MIN = 8;
+export const FLY_DELAY_MAX = 12;
+/** Lo que dura la mosca en su nenúfar. */
+export const FLY_TTL = 5;
+/** Bonus por llegar a su nenúfar mientras está. */
+export const FLY_POINTS = 200;
+/** Nivel a partir del cual aparece el cocodrilo. */
+export const CROC_FROM_LEVEL = 3;
+/** Fila del cocodrilo: sustituye al objeto 0 de su carril. */
+export const CROC_ROW = 1;
+/**
+ * Celdas totales: tres de lomo y una de cabeza. Igual que el `len` del tronco
+ * al que sustituye, así que el invariante de envolvimiento de su carril no
+ * cambia.
+ */
+export const CROC_LEN = 4;
+/**
+ * Puntos a los que se gana la vida extra, una sola vez por partida. Máximo por
+ * nivel con los extras: 5 × (470 + 200) + 1 000 = 4 350; SCORE_CAP sigue un
+ * orden de magnitud por encima de una partida excepcional.
+ */
+export const EXTRA_LIFE_AT = 10_000;
 // ── Entrada ──────────────────────────────────────────────────────────────────
 export type HopDir = "up" | "down" | "left" | "right";
 /** Las cuatro flechas, por e.code. P y Escape son del reproductor. */
@@ -289,6 +340,10 @@ export const PALETTE = {
   overlay: "rgba(10, 10, 15, 0.72)", // --bg con alfa
   gameOver: "#ff006e", // --magenta
   banner: "#f5ff00", // --yellow, el cartel de nivel
+  croc: "#8a8fb5", // --ink-dim, el lomo
+  crocHead: "#ff006e", // --magenta, la cabeza que mata
+  fly: "#f5ff00", // --yellow
+  flyWing: "rgba(230, 233, 255, 0.6)", // --ink con alfa
 } as const;
 /** Componentes de --ink, para textos con alfa variable. */
 export const INK_RGB = "230, 233, 255";

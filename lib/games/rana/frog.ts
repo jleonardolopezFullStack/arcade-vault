@@ -4,6 +4,7 @@ import {
   BOARD,
   CELL,
   COLS,
+  CROC_ROW,
   FROG_INSET,
   HOME_COLS,
   HOME_ROW,
@@ -19,11 +20,11 @@ import {
 } from "./constants";
 import {
   advanceLanes,
+  crocHeadAt,
   type Lane,
   laneAt,
   objectsOf,
   platformUnder,
-  speedMult,
 } from "./lanes";
 /**
  * La rana. `x` es el **centro** en píxeles, continuo, porque los troncos la
@@ -41,7 +42,8 @@ export type Frog = {
   cooldown: number;
   facing: HopDir;
 };
-export type DeathCause = "atropellada" | "agua" | "arrastrada" | "tiempo";
+export type DeathCause =
+  "atropellada" | "agua" | "arrastrada" | "tiempo" | "mordida";
 /** Lo que `resolveFrame` necesita y modifica de la partida. */
 export type FrameState = {
   frog: Frog;
@@ -157,15 +159,14 @@ export function homeAt(x: number): number {
  * encima. Muta `state` y devuelve lo ocurrido; la puntuación es de la fábrica.
  */
 export function resolveFrame(state: FrameState, dt: number): FrameResult {
-  const { frog, lanes } = state;
-  const mult = speedMult(state.level);
+  const { frog, lanes, level } = state;
   const result: FrameResult = { newRows: 0, death: null, home: null };
   // 1) Plataforma.
   const vx = isRiver(frog.row)
-    ? platformUnder(lanes, frog.row, frog.x, mult)
+    ? platformUnder(lanes, frog.row, frog.x, level)
     : null;
-  // 2) Carriles.
-  advanceLanes(lanes, mult, dt);
+  // 2) Carriles (y el ciclo de buceo).
+  advanceLanes(lanes, level, dt);
   // 3) Arrastre.
   if (vx !== null) {
     frog.x += vx * dt;
@@ -201,9 +202,15 @@ export function resolveFrame(state: FrameState, dt: number): FrameResult {
     return result;
   }
   if (isRiver(frog.row)) {
+    // La cabeza del cocodrilo, **antes** que el agua: caer en la boca se
+    // rotula como mordisco, no como chapuzón.
+    if (frog.row === CROC_ROW && crocHeadAt(lanes, frog.x, level)) {
+      result.death = "mordida";
+      return result;
+    }
     // Recién saltada a la fila (o dentro de ella), se busca la plataforma en
     // la posición de llegada; si no, vale la resuelta en el paso 1.
-    const under = hopped ? platformUnder(lanes, frog.row, frog.x, mult) : vx;
+    const under = hopped ? platformUnder(lanes, frog.row, frog.x, level) : vx;
     if (under === null) {
       result.death = "agua";
       return result;

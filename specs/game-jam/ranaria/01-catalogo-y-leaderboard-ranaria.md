@@ -1,6 +1,6 @@
 # GAME JAM «RANARIA» · SPEC 1/3 — Catálogo y leaderboard de RANARIA: la ficha sembrada, con su tope de marca alineado con el motor
 
-**Estado:** Aprobado
+**Estado:** Implementado
 **Depende de:** SPEC 05, SPEC 06
 **Tema:** «Ranaria» — juego estilo Frogger (rana que cruza carretera y río hasta los nenúfares).
 **Fecha:** 2026-10-09

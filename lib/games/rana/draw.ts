@@ -32,7 +32,15 @@ import {
 } from "./constants";
 import type { DeathCause, Frog } from "./frog";
 import { colCenter } from "./frog";
-import { type Lane, objectsOf } from "./lanes";
+import {
+  crocHead,
+  type DivePhase,
+  divePhase,
+  isCroc,
+  type Lane,
+  type LaneObject,
+  objectsOf,
+} from "./lanes";
 /** y del borde superior de una fila. */
 const rowTop = (row: number) => BOARD.y + row * CELL;
 /** y del centro de una fila. */
@@ -50,6 +58,7 @@ export const DEATH_LABEL: Record<DeathCause, string> = {
   agua: "AL AGUA",
   arrastrada: "ARRASTRADA",
   tiempo: "¡TIEMPO!",
+  mordida: "MORDIDA",
 };
 /** Fondo del lienzo, antes de todo lo demás. */
 export function clear(ctx: CanvasRenderingContext2D): void {
@@ -185,6 +194,52 @@ function drawLog(
   }
   ctx.stroke();
 }
+/**
+ * Cocodrilo: lomo como un tronco en `croc` con tres crestas triangulares, y la
+ * cabeza en `crocHead` —magenta, como los coches: magenta significa «esto
+ * mata» en todo el tablero— con un ojo y la mandíbula marcada. La cabeza va
+ * en la cara delantera, la que da `crocHead()`.
+ */
+function drawCroc(
+  ctx: CanvasRenderingContext2D,
+  lane: Lane,
+  obj: LaneObject,
+): void {
+  const cy = rowMid(lane.row);
+  const h = 26;
+  const top = cy - h / 2;
+  const head = crocHead(lane, obj);
+  const bodyX = lane.dir === 1 ? obj.x + 2 : head.x + head.w;
+  const bodyW = obj.w - CELL - 2;
+  ctx.fillStyle = PALETTE.croc;
+  fillRound(ctx, bodyX, top, bodyW, h, 8);
+  // Tres crestas sobre el lomo.
+  ctx.fillStyle = PALETTE.bg;
+  for (let k = 0; k < 3; k++) {
+    const cx = bodyX + (bodyW * (k + 0.5)) / 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - 7, cy);
+    ctx.lineTo(cx, cy - 8);
+    ctx.lineTo(cx + 7, cy);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillStyle = PALETTE.crocHead;
+  fillRound(ctx, head.x + 1, top + 2, head.w - 3, h - 4, 6);
+  // Ojo hacia atrás de la cabeza y mandíbula a lo largo, hacia delante.
+  const back = lane.dir === 1 ? head.x + 10 : head.x + head.w - 10;
+  const front = lane.dir === 1 ? head.x + head.w - 3 : head.x + 2;
+  ctx.fillStyle = PALETTE.bg;
+  ctx.beginPath();
+  ctx.arc(back, top + 8, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = PALETTE.bg;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(back, cy + 3);
+  ctx.lineTo(front, cy + 3);
+  ctx.stroke();
+}
 /** Un hexágono centrado. */
 function hexagon(
   ctx: CanvasRenderingContext2D,
@@ -203,14 +258,40 @@ function hexagon(
   ctx.closePath();
   ctx.fill();
 }
-/** Grupo de tortugas: una por celda, con caparazón y cuatro patas cortas. */
+/**
+ * Grupo de tortugas: una por celda, con caparazón y cuatro patas cortas.
+ *
+ * En aviso, el mismo dibujo a media alfa y parpadeando a 6 Hz —medio
+ * hundidas—; bajo el agua, solo un anillo tenue donde estaban, para que el
+ * hueco se lea como «aquí había algo». El parpadeo sale de `blink`, el
+ * acumulador del ciclo de buceo, así que la pausa también lo congela.
+ */
 function drawTurtles(
   ctx: CanvasRenderingContext2D,
   x: number,
   row: number,
   len: number,
+  phase: DivePhase,
+  blink: number,
 ): void {
   const cy = rowMid(row);
+  if (phase === "under") {
+    ctx.save();
+    ctx.strokeStyle = PALETTE.ripple;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < len; i++) {
+      ctx.beginPath();
+      ctx.arc(x + i * CELL + CELL / 2, cy, 12, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    return;
+  }
+  ctx.save();
+  if (phase === "warn") {
+    ctx.globalAlpha = Math.floor(blink * 12) % 2 === 0 ? 0.5 : 0.2;
+  }
   for (let i = 0; i < len; i++) {
     const cx = x + i * CELL + CELL / 2;
     ctx.fillStyle = PALETTE.turtle;
@@ -228,28 +309,44 @@ function drawTurtles(
     ctx.fillStyle = PALETTE.turtleShell;
     hexagon(ctx, cx, cy, 8);
   }
+  ctx.restore();
 }
 /**
  * Los diez carriles, recortados al tablero: los objetos que entran y salen se
- * ven cortados por el borde, no pintados sobre el margen.
+ * ven cortados por el borde, no pintados sobre el margen. `level` decide si
+ * las tortugas bucean.
  */
 export function drawLanes(
   ctx: CanvasRenderingContext2D,
   lanes: readonly Lane[],
+  level: number,
 ): void {
   ctx.save();
   ctx.beginPath();
   ctx.rect(BOARD.x, BOARD.y, BOARD.w, BOARD.h);
   ctx.clip();
   for (const lane of lanes) {
-    for (const obj of objectsOf(lane)) {
+    const objects = objectsOf(lane);
+    for (let i = 0; i < objects.length; i++) {
+      const obj = objects[i];
       if (obj.x > BOARD.x + BOARD.w || obj.x + obj.w < BOARD.x) continue;
       switch (lane.kind) {
         case "log":
-          drawLog(ctx, obj.x, lane.row, obj.w);
+          if (isCroc(lane, i, level)) {
+            drawCroc(ctx, lane, obj);
+          } else {
+            drawLog(ctx, obj.x, lane.row, obj.w);
+          }
           break;
         case "turtle":
-          drawTurtles(ctx, obj.x, lane.row, lane.len);
+          drawTurtles(
+            ctx,
+            obj.x,
+            lane.row,
+            lane.len,
+            divePhase(lane, i, level),
+            lane.diveAcc,
+          );
           break;
         case "truck":
           drawTruck(ctx, obj.x, lane.row, lane.dir, obj.w);
@@ -335,6 +432,29 @@ export function drawHomes(
   });
 }
 /**
+ * La mosca de bonificación sobre su nenúfar: cuerpo amarillo y dos alas en
+ * tinta translúcida, temblando ±1 px. `clock` es el tiempo de juego, así que
+ * en pausa se queda quieta. Sin glow: ningún elemento nuevo brilla.
+ */
+export function drawFly(
+  ctx: CanvasRenderingContext2D,
+  home: number,
+  clock: number,
+): void {
+  const cx = colCenter(HOME_COLS[home]) + Math.round(Math.sin(clock * 37));
+  const cy = rowMid(HOME_ROW) - 2 + Math.round(Math.cos(clock * 29));
+  ctx.fillStyle = PALETTE.flyWing;
+  for (const side of [-1, 1]) {
+    ctx.beginPath();
+    ctx.ellipse(cx + side * 5, cy - 3, 5, 3, side * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = PALETTE.fly;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+/**
  * La rana viva, con glow, orientada según el último salto. Durante HOP_ANIM la
  * posición dibujada interpola desde la celda anterior y la figura se estira un
  * 15 % en la dirección del salto.
@@ -373,7 +493,7 @@ export function drawDeath(
   ctx.save();
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
-  if (cause === "atropellada") {
+  if (cause === "atropellada" || cause === "mordida") {
     ctx.strokeStyle = PALETTE.death;
     ctx.beginPath();
     ctx.moveTo(x - 12, y - 12);
