@@ -61,12 +61,13 @@ Engines live in `lib/games/<concepto>/` and implement the contract in `lib/games
 
 `lib/games/registry.ts` maps catalog id → engine; ids absent show «PRÓXIMAMENTE». Folder names the concept, not the slug:
 
-| Catalog id      | Engine folder | Spec |
-| --------------- | ------------- | ---- |
-| `rocas`         | `asteroides`  | 05   |
-| `caida`         | `piezas`      | 07   |
-| `bloque-buster` | `ladrillos`   | 08   |
-| `serpentina`    | `serpiente`   | 09   |
+| Catalog id      | Engine folder | Spec                |
+| --------------- | ------------- | ------------------- |
+| `rocas`         | `asteroides`  | 05                  |
+| `caida`         | `piezas`      | 07                  |
+| `bloque-buster` | `ladrillos`   | 08                  |
+| `serpentina`    | `serpiente`   | 09                  |
+| `ranaria`       | `rana`        | game-jam/ranaria/02 |
 
 Original games to port live in `references/RRO5vePTlqkYrGHjYdtf_started-games/` (asteroids, tetris, arkanoid); sprites in `references/Assets/`.
 
