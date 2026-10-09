@@ -33,7 +33,8 @@ parte de ningún flujo del proyecto (decisión de SPEC 04, matizada en SPEC 06).
 ## Si algo va mal
 
 Aplica las reversiones **en orden inverso** al de las migraciones
-(`003` → `002` → `001`). `003` es inocua; `001` borra las nueve tablas y con
+(`004` → `003` → `002` → `001`). `004` solo restaura el `max_score` de
+`ranaria` a `10000000`; `003` es inocua; `001` borra las nueve tablas y con
 ellas todas las marcas guardadas.
 
 ## Lo que hay que saber del esquema
