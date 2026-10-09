@@ -112,6 +112,7 @@ Spec-driven: one spec per feature in `specs/NN-slug.md`, then implement on branc
 Live in `.claude/agents/`:
 
 - `game-planner` → decides **which game to add next** (step before `/spec-game`). Reads `registry.ts`, `specs/`, `references/` and `public.games` (select only), proposes 2-3 candidates and recommends one. Writes only to `references/game-suggestions-todo.md` (To Do of every suggestion: recomendado / sugeridos / en spec / implementados / descartados — human edits are respected) and its memory `.claude/agent-memory/game-planner/` (`memory: project`, learned preferences). Flow: `game-planner` → `/spec-game` → `/spec-impl`.
+- `game-jam` → given a **theme**, invents one new game and writes, **unsupervised** (no questions), its full spec pack in `specs/game-jam/<id>/`: `01-catalogo-y-leaderboard-<id>.md` (one migration: `games` row + `scores_<slug>` + view branch, plus `.cover-*`), `02-juego-<id>-<concepto>.md` (engine, SPEC 07/08/09 shape), optional `03-…` (separable extras). Supabase select-only; reserves ids/`sort_order` of pending jams. Specs stay `Borrador`; then `/spec-impl specs/game-jam/<id>/01-…` → `02-…`.
 
 ## Design prototype
 
