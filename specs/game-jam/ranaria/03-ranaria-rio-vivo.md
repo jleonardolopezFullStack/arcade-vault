@@ -1,6 +1,6 @@
 # GAME JAM «RANARIA» · SPEC 3/3 — «Río vivo»: tortugas que se sumergen, mosca, cocodrilo y vida extra
 
-**Estado:** Aprobado
+**Estado:** Implementado
 **Depende de:** SPEC 05, SPEC 06, `specs/game-jam/ranaria/02-juego-ranaria-rana.md`
 **Tema:** «Ranaria» — juego estilo Frogger (rana que cruza carretera y río hasta los nenúfares).
 **Fecha:** 2026-10-09

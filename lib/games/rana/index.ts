@@ -23,6 +23,11 @@ import type {
 import {
   CAPTURED_KEYS,
   DEATH_TIME,
+  EXTRA_LIFE_AT,
+  FLY_DELAY_MAX,
+  FLY_DELAY_MIN,
+  FLY_POINTS,
+  FLY_TTL,
   HOMES,
   type HopDir,
   LEVEL_BANNER,
@@ -42,6 +47,7 @@ import {
   DEATH_LABEL,
   drawBoard,
   drawDeath,
+  drawFly,
   drawFrog,
   drawHomes,
   drawHud,
@@ -55,7 +61,7 @@ import {
   type FrameState,
   resolveFrame,
 } from "./frog";
-import { advanceLanes, createLanes, speedMult } from "./lanes";
+import { advanceLanes, createLanes } from "./lanes";
 export function createRanaEngine(
   canvas: HTMLCanvasElement,
   hooks: GameEngineHooks,
@@ -76,8 +82,14 @@ export function createRanaEngine(
   let deathAcc = 0;
   /** Segundos que le quedan al cartel «NIVEL N». */
   let bannerAcc = 0;
-  /** Tiempo de juego acumulado, solo para el parpadeo de la barra. */
+  /** Tiempo de juego acumulado, para el parpadeo de la barra y la mosca. */
   let clock = 0;
+  /** La mosca de bonificación: en qué nenúfar está y cuánto le queda. */
+  let fly: { home: number; ttl: number } | null = null;
+  /** Espera sorteada hasta la próxima mosca. */
+  let flyWait = rollFlyWait();
+  /** La vida extra se da una sola vez por partida; `restart()` la repone. */
+  let extraLifeGiven = false;
   // ── Contabilidad del bucle ─────────────────────────────────────────────────
   let rafId: number | null = null;
   let lastTime: number | null = null;
@@ -115,12 +127,56 @@ export function createRanaEngine(
     deathAcc = 0;
     bannerAcc = 0;
     clock = 0;
+    fly = null;
+    flyWait = rollFlyWait();
+    extraLifeGiven = false;
     paused = false;
     lastSnapshot = null;
   }
-  /** Toda suma pasa por aquí: el marcador satura en SCORE_CAP. */
+  /** Espera hasta la próxima mosca, sorteada en [FLY_DELAY_MIN, FLY_DELAY_MAX]. */
+  function rollFlyWait(): number {
+    return FLY_DELAY_MIN + Math.random() * (FLY_DELAY_MAX - FLY_DELAY_MIN);
+  }
+  /** Quita la mosca del tablero y sortea la siguiente espera. */
+  function clearFly(): void {
+    fly = null;
+    flyWait = rollFlyWait();
+  }
+  /**
+   * La mosca solo corre en `"playing"`. Al vencer la espera aparece en un
+   * nenúfar **libre** sorteado; si no hay ninguno, se vuelve a sortear la
+   * espera sin aparecer. Al caducar, desaparece y se sortea la siguiente.
+   */
+  function updateFly(dt: number): void {
+    if (fly) {
+      fly.ttl -= dt;
+      if (fly.ttl <= 0) clearFly();
+      return;
+    }
+    flyWait -= dt;
+    if (flyWait > 0) return;
+    const free = game.homes.flatMap((taken, i) => (taken ? [] : [i]));
+    if (free.length === 0) {
+      flyWait = rollFlyWait();
+      return;
+    }
+    fly = {
+      home: free[Math.floor(Math.random() * free.length)],
+      ttl: FLY_TTL,
+    };
+  }
+  /**
+   * Toda suma pasa por aquí: el marcador satura en SCORE_CAP, y la primera vez
+   * que cruza EXTRA_LIFE_AT da la vida extra. Va antes de `emitSnapshot()` en
+   * el mismo fotograma, así que el cuarto corazón de React y la cuarta rana
+   * del canvas llegan a la vez.
+   */
   function addScore(n: number): void {
     score = Math.min(score + n, SCORE_CAP);
+    if (!extraLifeGiven && score >= EXTRA_LIFE_AT) {
+      extraLifeGiven = true;
+      lives += 1;
+    }
   }
   /**
    * La rana vuelve a la salida con el reloj lleno. Se usa al reaparecer tras
@@ -154,11 +210,17 @@ export function createRanaEngine(
   function arrive(home: number): void {
     game.homes[home] = true;
     addScore(POINTS_HOME + TIME_BONUS_PER_S * Math.floor(game.timeLeft));
+    if (fly?.home === home) {
+      addScore(FLY_POINTS);
+      clearFly();
+    }
     if (game.homes.every(Boolean)) {
       addScore(POINTS_ALL_HOMES);
       game.level++;
       game.homes = game.homes.map(() => false);
       bannerAcc = LEVEL_BANNER;
+      // Al subir de nivel no queda ninguna mosca en el tablero.
+      clearFly();
     }
     resetTrip();
   }
@@ -193,7 +255,7 @@ export function createRanaEngine(
     if (status === "dead") {
       // Los carriles siguen moviéndose; el reloj no corre y las flechas no
       // hacen nada.
-      advanceLanes(game.lanes, speedMult(game.level), dt);
+      advanceLanes(game.lanes, game.level, dt);
       deathAcc += dt;
       if (deathAcc >= DEATH_TIME) {
         resetTrip();
@@ -206,12 +268,14 @@ export function createRanaEngine(
     if (result.newRows > 0) addScore(result.newRows * POINTS_ROW);
     if (result.home !== null) arrive(result.home);
     else if (result.death) die(result.death);
+    if (status === "playing") updateFly(dt);
   }
   function draw(): void {
     clear(ctx);
     drawBoard(ctx);
     drawHomes(ctx, game.homes);
-    drawLanes(ctx, game.lanes);
+    if (fly) drawFly(ctx, fly.home, clock);
+    drawLanes(ctx, game.lanes, game.level);
     if (status === "playing") drawFrog(ctx, game.frog);
     else if (deathCause) {
       drawDeath(ctx, deathCause, deathAt, Math.min(1, deathAcc / DEATH_TIME));
