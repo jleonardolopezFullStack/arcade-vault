@@ -67,13 +67,19 @@ export function Nav() {
           <span>CRÉDITOS · 03</span>
         </div>
         {user ? (
-          <Button variant="ghost" className="ml-4" onClick={signOut}>
+          <Button
+            variant="ghost"
+            className="ml-4 max-[480px]:hidden"
+            onClick={signOut}
+          >
             {user.name} ▾
           </Button>
         ) : (
           <Link
             href="/acceso"
-            className={buttonStyles({ className: "ml-4" })}
+            // En móvil estrecho no cabe junto a la marca y el menú: la entrada
+            // sigue en el menú lateral («Iniciar Sesión»).
+            className={buttonStyles({ className: "ml-4 max-[480px]:hidden" })}
             onClick={close}
           >
             Iniciar Sesión
@@ -134,6 +140,20 @@ export function Nav() {
         >
           {user ? "Cuenta" : "Iniciar Sesión"}
         </Link>
+        {/* En móvil estrecho el alias no cabe en la barra: su acción vive aquí. */}
+        {user && (
+          <button
+            type="button"
+            tabIndex={open ? undefined : -1}
+            onClick={() => {
+              signOut();
+              close();
+            }}
+            className="hidden border-b border-dashed border-line-2 px-3 py-[14px] text-left font-pixel text-[11px] text-ink-dim max-[480px]:block"
+          >
+            Cerrar sesión · {user.name}
+          </button>
+        )}
         <div className="flex-1" />
         <ThemeToggle
           className="mb-4 self-start"
