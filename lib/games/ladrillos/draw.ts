@@ -1,25 +1,24 @@
-// Dibujo de BLOQUE BUSTER, repintado con la paleta del Vault.
+// Dibujo de BLOQUE BUSTER con la paleta de la skin activa.
 //
 // El original dibujaba todo con un spritesheet PNG; aquí no se carga ninguna
 // imagen y cada pieza son primitivas de canvas. La explosión de cuatro
 // fotogramas se sustituye por un destello que crece y se apaga en los mismos
 // 150 ms.
 //
-// Cada función recibe el `ctx`; ninguna lo lee del ámbito.
+// Cada función recibe el `ctx` y la paleta activa `pal`; ninguna los lee
+// del ámbito.
 import { formatScore } from "@/lib/format";
 import {
   BALL_SIZE,
-  BLOCK_COLORS,
   FLASH_DURATION,
   FLASH_GROW,
   FONT_MONO,
   FONT_PIXEL,
   H,
-  HIGHLIGHT,
   HIGHLIGHT_H,
-  PALETTE,
   W,
   type BlockColor,
+  type Palette,
 } from "./constants";
 import type { Ball, Block, Paddle } from "./physics";
 /** Un bloque roto, apagándose. */
@@ -33,13 +32,14 @@ export type Flash = {
   elapsed: number;
 };
 /** Fondo del lienzo, antes de todo lo demás. */
-export function clear(ctx: CanvasRenderingContext2D): void {
-  ctx.fillStyle = PALETTE.bg;
+export function clear(ctx: CanvasRenderingContext2D, pal: Palette): void {
+  ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, W, H);
 }
 /** Rectángulo con el brillo superior que comparten bloques y paleta. */
 function brick(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   x: number,
   y: number,
   w: number,
@@ -48,15 +48,16 @@ function brick(
 ): void {
   ctx.fillStyle = color;
   ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
-  ctx.fillStyle = HIGHLIGHT;
+  ctx.fillStyle = pal.highlight;
   ctx.fillRect(x + 1, y + 1, w - 2, HIGHLIGHT_H);
 }
 export function drawBlocks(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   blocks: readonly Block[],
 ): void {
   for (const b of blocks) {
-    if (b.alive) brick(ctx, b.x, b.y, b.w, b.h, BLOCK_COLORS[b.color]);
+    if (b.alive) brick(ctx, pal, b.x, b.y, b.w, b.h, pal.blocks[b.color]);
   }
 }
 /**
@@ -65,13 +66,14 @@ export function drawBlocks(
  */
 export function drawFlashes(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   flashes: readonly Flash[],
 ): void {
   for (const f of flashes) {
     const t = Math.min(f.elapsed / FLASH_DURATION, 1);
     const grow = FLASH_GROW * t;
     ctx.globalAlpha = 1 - t;
-    ctx.fillStyle = BLOCK_COLORS[f.color];
+    ctx.fillStyle = pal.blocks[f.color];
     ctx.fillRect(f.x - grow, f.y - grow, f.w + grow * 2, f.h + grow * 2);
   }
   // Si esto no vuelve a 1, todo lo que se dibuje después sale fantasma.
@@ -79,12 +81,17 @@ export function drawFlashes(
 }
 export function drawPaddle(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   paddle: Paddle,
 ): void {
-  brick(ctx, paddle.x, paddle.y, paddle.w, paddle.h, PALETTE.paddle);
+  brick(ctx, pal, paddle.x, paddle.y, paddle.w, paddle.h, pal.paddle);
 }
-export function drawBall(ctx: CanvasRenderingContext2D, ball: Ball): void {
-  ctx.fillStyle = PALETTE.ball;
+export function drawBall(
+  ctx: CanvasRenderingContext2D,
+  pal: Palette,
+  ball: Ball,
+): void {
+  ctx.fillStyle = pal.ball;
   ctx.fillRect(ball.x, ball.y, ball.w, ball.h);
 }
 /**
@@ -96,16 +103,17 @@ export function drawBall(ctx: CanvasRenderingContext2D, ball: Ball): void {
  */
 export function drawHud(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   stats: { score: number; level: number; lives: number },
 ): void {
   ctx.textBaseline = "top";
-  ctx.fillStyle = PALETTE.hudLabel;
+  ctx.fillStyle = pal.hudLabel;
   ctx.font = `10px ${FONT_MONO}`;
   ctx.textAlign = "left";
   ctx.fillText("PUNTUACIÓN", 14, 14);
   ctx.textAlign = "center";
   ctx.fillText("NIVEL", W / 2, 14);
-  ctx.fillStyle = PALETTE.hud;
+  ctx.fillStyle = pal.hud;
   ctx.font = `16px ${FONT_PIXEL}`;
   ctx.textAlign = "left";
   ctx.fillText(formatScore(stats.score), 14, 32);
@@ -115,7 +123,7 @@ export function drawHud(
   const gap = 4;
   for (let i = 0; i < stats.lives; i++) {
     const x = W - 14 - (stats.lives - i) * (BALL_SIZE + gap);
-    ctx.fillStyle = PALETTE.ball;
+    ctx.fillStyle = pal.ball;
     ctx.fillRect(x, 18, BALL_SIZE, BALL_SIZE);
   }
 }
@@ -126,18 +134,19 @@ export function drawHud(
  */
 export function drawOverlay(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   title: string,
   sub: string,
   tone: "gameOver" | "win",
 ): void {
-  ctx.fillStyle = PALETTE.overlay;
+  ctx.fillStyle = pal.overlay;
   ctx.fillRect(0, 0, W, H);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = PALETTE[tone];
+  ctx.fillStyle = pal[tone];
   ctx.font = `34px ${FONT_PIXEL}`;
   ctx.fillText(title, W / 2, H / 2 - 18);
-  ctx.fillStyle = PALETTE.hud;
+  ctx.fillStyle = pal.hud;
   ctx.font = `18px ${FONT_MONO}`;
   ctx.fillText(sub, W / 2, H / 2 + 22);
 }

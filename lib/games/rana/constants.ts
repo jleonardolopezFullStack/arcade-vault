@@ -2,6 +2,7 @@
 // references/RRO5vePTlqkYrGHjYdtf_started-games/ no hay frogger, así que estos
 // números son el diseño y no la copia de nadie. Ajustar la dificultad es
 // cambiarlos aquí; no hay ninguno suelto en el resto del motor.
+import type { Palettes } from "../types";
 /** Mundo interno. El escalado a pantalla es cosa del CSS, no de las coordenadas. */
 export const W = 800;
 export const H = 600;
@@ -304,19 +305,92 @@ export const CAPTURED_KEYS: Readonly<Record<string, HopDir>> = {
   ArrowLeft: "left",
   ArrowRight: "right",
 };
-// ── Paleta y tipografías del canvas ───────────────────────────────────────────
-// Los valores van literales: `ctx` no entiende variables CSS y leerlas con
-// getComputedStyle en cada fotograma sería caro. **Verde es la rana, y solo la
-// rana y su destino**: ningún obstáculo es verde, así que se encuentra de un
-// vistazo en cualquier fila.
-export const PALETTE = {
+// ── Paletas y tipografías del canvas ──────────────────────────────────────────
+// Seis paletas, `PALETTES[skin][mode]`, todas con las mismas claves. Los
+// valores van literales: `ctx` no entiende variables CSS y leerlas con
+// getComputedStyle en cada fotograma sería caro. Las franjas translúcidas
+// (agua, orilla, mediana) y los velos van en hex de ocho cifras para que se
+// compongan igual que antes; los contrastes se midieron ya mezclados y están
+// en specs/skins/README.md.
+//
+// **Invariantes de todas las skins:**
+// - **Verde es la rana, y solo la rana y su destino**: ningún obstáculo ni
+//   plataforma es verde, así que se encuentra de un vistazo en cualquier fila.
+//   En `retro`, sin tonos que elegir, el papel lo hace la luminancia: el tono
+//   extremo es solo de la rana y de los nenúfares.
+// - **Lo que mata va en magenta** (el coche y el deportivo magentas, la
+//   cabeza del cocodrilo, los marcadores de muerte). En `retro`, la cabeza
+//   del cocodrilo se separa del lomo por luminancia además de por su ojo y
+//   su mandíbula.
+// - Las tortugas en aviso se pintan a media alfa: `turtle` tiene que seguir
+//   llegando a 3:1 sobre el agua así mezclada.
+export type Palette = {
+  bg: string;
+  /** El río; también rellena las bahías de la orilla. */
+  water: string;
+  /** La orilla de los nenúfares. */
+  bank: string;
+  road: string;
+  laneLine: string;
+  /** Mediana y salida. */
+  safe: string;
+  /** El borde que mata al ser arrastrado: un objeto, ≥ 3:1 sobre `bg`. */
+  frame: string;
+  frog: string;
+  eye: string;
+  frogHome: string;
+  lily: string;
+  car1: string;
+  car2: string;
+  car3: string;
+  sport: string;
+  truck: string;
+  /** Ruedas de coches y deportivos. */
+  wheel: string;
+  /** Faros en la cara delantera. */
+  headlight: string;
+  log: string;
+  logEnd: string;
+  logGrain: string;
+  turtle: string;
+  turtleShell: string;
+  /**
+   * Alfa de las tortugas en aviso, en la fase visible del parpadeo. El neón
+   * oscuro conserva la media alfa del SPEC 3/3; sobre papel o en LCD, media
+   * alfa no llega a 3:1 sobre el agua y sube hasta que llega.
+   */
+  warnAlpha: number;
+  ripple: string;
+  death: string;
+  timeBar: string;
+  /** El carril vacío de la barra de tiempo. */
+  timeTrack: string;
+  timeWarn: string;
+  hud: string;
+  hudLabel: string;
+  overlay: string;
+  gameOver: string;
+  banner: string;
+  croc: string;
+  crocHead: string;
+  fly: string;
+  /** Contorno de la mosca, que la separa del nenúfar. */
+  flyEdge: string;
+  flyWing: string;
+  /** Halo (`shadowBlur`) en la rana. Solo el neón brilla. */
+  glow: boolean;
+};
+/** El look del Vault (SPEC 2/3 y 3/3 de RANARIA). */
+const NEON_DARK: Palette = {
   bg: "#0a0a0f", // --bg
-  water: "rgba(0, 245, 255, 0.08)", // --cyan, el río
-  bank: "rgba(0, 255, 136, 0.10)", // --green, la orilla de los nenúfares
+  water: "#00f5ff14", // --cyan al 8 %, el río
+  bank: "#00ff881a", // --green al 10 %, la orilla de los nenúfares
   road: "#15151f", // --bg-3, el asfalto
   laneLine: "#4a4f70", // --ink-faint, las marcas discontinuas
-  safe: "rgba(255, 0, 110, 0.10)", // --magenta, mediana y salida
-  frame: "rgba(0, 245, 255, 0.18)", // --line, el borde del tablero
+  safe: "#ff006e1a", // --magenta al 10 %, mediana y salida
+  // Era --line (--cyan al 18 %): 1,47:1 sobre el fondo, y es el borde que
+  // mata al ser arrastrado. Al 42 % mezclado llega a 3,24.
+  frame: "#066d74", // --cyan al 42 % mezclado sobre --bg
   frog: "#00ff88", // --green
   eye: "#0a0a0f", // --bg
   frogHome: "#00f5ff", // --cyan, la rana ya a salvo en su nenúfar
@@ -326,27 +400,264 @@ export const PALETTE = {
   car3: "#ff006e", // --magenta
   sport: "#ff006e", // --magenta
   truck: "#8a8fb5", // --ink-dim
+  wheel: "#0a0a0f", // --bg
+  headlight: "#e6e9ff", // --ink
   log: "#d97a3a", // --bronze
   logEnd: "#8a4d25", // --bronze al 64 %
-  logGrain: "rgba(10, 10, 15, 0.35)", // --bg con alfa
+  logGrain: "#0a0a0f59", // --bg al 35 %
   turtle: "#ffcf3a", // --gold
   turtleShell: "#8a6f1f", // --gold al 54 %
+  warnAlpha: 0.5,
   ripple: "#00f5ff", // --cyan
   death: "#ff006e", // --magenta
   timeBar: "#00ff88", // --green
+  timeTrack: "#e6e9ff0f", // --ink al 6 %
   timeWarn: "#ff006e", // --magenta
   hud: "#e6e9ff", // --ink
-  hudLabel: "#4a4f70", // --ink-faint
-  overlay: "rgba(10, 10, 15, 0.72)", // --bg con alfa
+  // Era --ink-faint (#4a4f70): 2,49:1, por debajo del 4,5 de un rótulo.
+  hudLabel: "#8a8fb5", // --ink-dim
+  overlay: "#0a0a0fb8", // --bg al 72 %
   gameOver: "#ff006e", // --magenta
   banner: "#f5ff00", // --yellow, el cartel de nivel
   croc: "#8a8fb5", // --ink-dim, el lomo
   crocHead: "#ff006e", // --magenta, la cabeza que mata
   fly: "#f5ff00", // --yellow
-  flyWing: "rgba(230, 233, 255, 0.6)", // --ink con alfa
-} as const;
-/** Componentes de --ink, para textos con alfa variable. */
-export const INK_RGB = "230, 233, 255";
+  flyEdge: "#0a0a0f", // --bg
+  flyWing: "#e6e9ff99", // --ink al 60 %
+  glow: true,
+};
+export const PALETTES: Palettes<Palette> = {
+  // No hay original en references/: la convención del Frogger de 1981. Río
+  // azul marino, aceras moradas, troncos marrones, tortugas rojas y la rana
+  // verde. El cocodrilo y el tractor del original eran verdes: aquí no, por
+  // el invariante; el lomo va en gris y la cabeza en el rosa de lo que mata.
+  clasico: {
+    dark: {
+      bg: "#0a0a0f", // --bg
+      water: "#000047",
+      bank: "#0a2a12",
+      road: "#0a0a0f",
+      laneLine: "#3a3a44",
+      safe: "#2a1240",
+      frame: "#9e9e9e",
+      frog: "#3cdc3c",
+      eye: "#0a0a0f",
+      frogHome: "#c8ff8c",
+      lily: "#2e9e3a",
+      car1: "#5a8cff",
+      car2: "#ffde00",
+      car3: "#ff3cb4",
+      sport: "#ff3cb4",
+      truck: "#e0e0e0",
+      wheel: "#0a0a0f",
+      headlight: "#ffffff",
+      log: "#b5651d",
+      logEnd: "#6b3a12",
+      logGrain: "#00000059",
+      turtle: "#e83030",
+      turtleShell: "#7a1010",
+      warnAlpha: 0.85,
+      ripple: "#9ec8ff",
+      death: "#ff3cb4",
+      timeBar: "#3cdc3c",
+      timeTrack: "#ffffff0f",
+      timeWarn: "#ff3cb4",
+      hud: "#ffffff",
+      hudLabel: "#a9a9ab",
+      overlay: "#0a0a0fb8",
+      gameOver: "#ff3cb4",
+      banner: "#ffde00",
+      croc: "#6e6e6e",
+      crocHead: "#ff3cb4",
+      fly: "#ffde00",
+      flyEdge: "#0a0a0f",
+      flyWing: "#ffffff99",
+      glow: false,
+    },
+    light: {
+      bg: "#f4f5f7",
+      water: "#cddcf2",
+      bank: "#dcefdc",
+      road: "#e4e4e8",
+      laneLine: "#b4b4bc",
+      safe: "#eadcf2",
+      frame: "#555555",
+      frog: "#0f4d0f",
+      eye: "#f4f5f7",
+      frogHome: "#0b3d0b",
+      lily: "#1b5e20",
+      car1: "#1f4fbf",
+      car2: "#8d6e00",
+      car3: "#b0006a",
+      sport: "#b0006a",
+      truck: "#555555",
+      wheel: "#111111",
+      headlight: "#f4f5f7",
+      log: "#a0622a",
+      logEnd: "#5c3410",
+      logGrain: "#00000040",
+      turtle: "#d83a3a",
+      turtleShell: "#6a1010",
+      warnAlpha: 0.9,
+      ripple: "#1f4fbf",
+      death: "#b0006a",
+      timeBar: "#2e7d32",
+      timeTrack: "#1111110f",
+      timeWarn: "#b0006a",
+      hud: "#111111",
+      hudLabel: "#555555",
+      overlay: "#f4f5f7c7",
+      gameOver: "#b0006a",
+      banner: "#7a5f00",
+      croc: "#7a7a7a",
+      crocHead: "#8a0050",
+      fly: "#fff59d",
+      flyEdge: "#111111",
+      flyWing: "#ffffffb3",
+      glow: false,
+    },
+  },
+  neon: {
+    dark: NEON_DARK,
+    // Sin halo: sobre papel, el brillo se lee como borrón. Los acentos son
+    // los del --bg claro del Vault; la rana baja un punto más de luz para
+    // separarse de troncos y tortugas, y la mosca conserva su amarillo vivo
+    // sobre el nenúfar oscuro.
+    light: {
+      bg: "#eef0f7", // --bg claro
+      water: "#00666f1a", // --cyan claro al 10 %
+      bank: "#00703d1a", // --green claro al 10 %
+      road: "#d9ddea", // --bg-3 claro
+      laneLine: "#9a9fbd",
+      safe: "#bc00571a", // --magenta claro al 10 %
+      frame: "#00666f", // --cyan claro
+      frog: "#00562f", // --green claro, más hondo
+      eye: "#eef0f7", // --bg claro
+      frogHome: "#003d42",
+      lily: "#00703d", // --green claro
+      car1: "#00666f", // --cyan claro
+      car2: "#615d00", // --yellow claro
+      car3: "#bc0057", // --magenta claro
+      sport: "#bc0057", // --magenta claro
+      truck: "#454a6b", // --ink-dim claro
+      wheel: "#11131f", // --ink claro
+      headlight: "#eef0f7", // --bg claro
+      log: "#b0561a", // --bronze claro
+      logEnd: "#5e2d0d",
+      logGrain: "#11131f40",
+      turtle: "#8d6800",
+      turtleShell: "#3d2b00",
+      warnAlpha: 0.85,
+      ripple: "#00666f", // --cyan claro
+      death: "#bc0057", // --magenta claro
+      timeBar: "#00703d", // --green claro
+      timeTrack: "#11131f0f", // --ink claro al 6 %
+      timeWarn: "#bc0057", // --magenta claro
+      hud: "#11131f", // --ink claro
+      hudLabel: "#454a6b", // --ink-dim claro
+      overlay: "#eef0f7c7",
+      gameOver: "#bc0057", // --magenta claro
+      banner: "#615d00", // --yellow claro
+      croc: "#6a6f90", // --ink-dim claro
+      crocHead: "#8a0040", // --magenta claro
+      fly: "#f5ff00", // --yellow
+      flyEdge: "#11131f", // --ink claro
+      flyWing: "#ffffffb3",
+      glow: false,
+    },
+  },
+  // LCD de cuatro tonos en gris azulado, como una portátil de bolsillo: ni
+  // el verde de ROCAS y SERPENTINA ni el ámbar de BLOQUE BUSTER, y sin un
+  // verde que robe el papel de la rana. El tono extremo es solo de la rana y
+  // los nenúfares; plataformas y coches van un escalón por debajo, y la
+  // cabeza del cocodrilo uno más abajo que su lomo.
+  retro: {
+    dark: {
+      bg: "#0b0d14",
+      water: "#10141f",
+      bank: "#141a26",
+      road: "#0b0d14",
+      laneLine: "#2c3448",
+      safe: "#161b28",
+      frame: "#6a7896",
+      frog: "#eef2ff",
+      eye: "#0b0d14",
+      frogHome: "#eef2ff",
+      lily: "#eef2ff",
+      car1: "#9aa6c4",
+      car2: "#9aa6c4",
+      car3: "#9aa6c4",
+      sport: "#9aa6c4",
+      truck: "#6a7896",
+      wheel: "#0b0d14",
+      headlight: "#eef2ff",
+      log: "#9aa6c4",
+      logEnd: "#6a7896",
+      logGrain: "#0b0d1459",
+      turtle: "#9aa6c4",
+      turtleShell: "#6a7896",
+      warnAlpha: 0.65,
+      ripple: "#9aa6c4",
+      death: "#eef2ff",
+      timeBar: "#9aa6c4",
+      timeTrack: "#eef2ff0f",
+      timeWarn: "#eef2ff",
+      hud: "#eef2ff",
+      hudLabel: "#9aa6c4",
+      overlay: "#0b0d14c7",
+      gameOver: "#eef2ff",
+      banner: "#eef2ff",
+      croc: "#9aa6c4",
+      crocHead: "#6a7896",
+      fly: "#6a7896",
+      flyEdge: "#0b0d14",
+      flyWing: "#0b0d1499",
+      glow: false,
+    },
+    light: {
+      bg: "#d8dee9",
+      water: "#ccd3e0",
+      bank: "#c4ccdb",
+      road: "#d8dee9",
+      laneLine: "#a8b1c4",
+      safe: "#c8cfdc",
+      frame: "#4a5672",
+      frog: "#141a2b",
+      eye: "#d8dee9",
+      frogHome: "#141a2b",
+      lily: "#141a2b",
+      car1: "#3a4560",
+      car2: "#3a4560",
+      car3: "#3a4560",
+      sport: "#3a4560",
+      truck: "#5a6684",
+      wheel: "#141a2b",
+      headlight: "#d8dee9",
+      log: "#3a4560",
+      logEnd: "#5a6684",
+      logGrain: "#d8dee959",
+      turtle: "#3a4560",
+      turtleShell: "#5a6684",
+      warnAlpha: 0.75,
+      ripple: "#3a4560",
+      death: "#141a2b",
+      timeBar: "#3a4560",
+      timeTrack: "#141a2b0f",
+      timeWarn: "#141a2b",
+      hud: "#141a2b",
+      hudLabel: "#3a4560",
+      overlay: "#d8dee9d9",
+      gameOver: "#141a2b",
+      banner: "#141a2b",
+      croc: "#3a4560",
+      crocHead: "#5a6684",
+      fly: "#d8dee9",
+      flyEdge: "#141a2b",
+      flyWing: "#d8dee999",
+      glow: false,
+    },
+  },
+};
 /** Mismas familias que --mono y --pixel de globals.css (cargadas por next/font). */
 export const FONT_MONO = '"JetBrains Mono", "Courier New", monospace';
 export const FONT_PIXEL = '"Press Start 2P", system-ui, monospace';

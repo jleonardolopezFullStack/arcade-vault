@@ -1,11 +1,13 @@
 @import "tailwindcss";
-
+/* `light:` para utilidades que solo cambian de día (data-theme lo fija el
+   script de app/layout.tsx). Las reglas de components no pueden pisar una
+   utilidad como text-white: esta variante sí, porque es otra utilidad. */
+@custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
 /* ==========================================================================
    ARCADE VAULT — tema global
    Puerto 1:1 de references/templates/styles.css
    Fuentes cargadas con next/font en app/layout.tsx
    ========================================================================== */
-
 /* ===== design tokens (mismos nombres que el prototipo) ===== */
 :root {
   --bg: #0a0a0f;
@@ -23,7 +25,6 @@
   --bronze: #d97a3a;
   --line: rgba(0, 245, 255, 0.18);
   --line-2: rgba(255, 255, 255, 0.06);
-
   /* next/font carga las tres familias desde app/layout.tsx. Se nombran aquí
      directamente y no por su variable: var(--font-press-start) expande a
      "Press Start 2P", "Press Start 2P Fallback", y esa fallback lleva un
@@ -31,8 +32,33 @@
      del HUD). Estas son las mismas pilas que references/templates/styles.css. */
   --pixel: "Press Start 2P", system-ui, monospace;
   --mono: "JetBrains Mono", "Courier Prime", "Courier New", monospace;
+  color-scheme: dark;
 }
-
+/* ===== modo claro: «la sala con las luces encendidas» =====
+   Mismos nombres de token, valores de día. El fondo es un gris lavanda frío,
+   no crema: es el plástico de un mueble arcade bajo fluorescentes. Los
+   acentos conservan su tono y bajan de luz hasta leerse como texto: todos
+   dan ≥ 4,5:1 sobre --bg, --bg-2 y --bg-3 (medido, ver specs/skins/README.md).
+   Lo pone `data-theme` en <html>, que fija el script de app/layout.tsx desde
+   la preferencia guardada o, si no la hay, desde prefers-color-scheme. */
+:root[data-theme="light"] {
+  --bg: #eef0f7;
+  --bg-2: #e4e7f1;
+  --bg-3: #d9ddea;
+  --ink: #11131f;
+  --ink-dim: #454a6b;
+  --ink-faint: #585d80;
+  --cyan: #00666f;
+  --magenta: #bc0057;
+  --yellow: #615d00;
+  --green: #00703d;
+  --gold: #7a5700;
+  --silver: #4f586b;
+  --bronze: #9a4a16;
+  --line: rgba(0, 102, 111, 0.28);
+  --line-2: rgba(17, 19, 31, 0.1);
+  color-scheme: light;
+}
 /* ===== puente hacia Tailwind: bg-bg-2, text-cyan, border-line, font-pixel… ===== */
 @theme inline {
   --color-bg: var(--bg);
@@ -50,10 +76,8 @@
   --color-bronze: var(--bronze);
   --color-line: var(--line);
   --color-line-2: var(--line-2);
-
   --font-pixel: var(--pixel);
   --font-mono: var(--mono);
-
   /* El prototipo no toca el line-height en ningún sitio: todo hereda el 1.5
      del body. Las utilidades text-<escala> de Tailwind traen el suyo propio
      (text-xs → 1.333, text-4xl → 1) y desplazarían el texto dentro de su caja.
@@ -66,7 +90,6 @@
   --text-2xl--line-height: 1.5;
   --text-3xl--line-height: 1.5;
   --text-4xl--line-height: 1.5;
-
   --animate-flicker: flicker 5s infinite steps(1, end);
   --animate-blink: blink 1.2s steps(1, end) infinite;
   --animate-pulse-neon: pulse 1.6s ease-in-out infinite;
@@ -75,7 +98,6 @@
   --animate-slide-in: slideIn 260ms ease-out;
   --animate-rise: rise 360ms ease-out forwards;
 }
-
 /* ===== base ===== */
 @layer base {
   html,
@@ -83,7 +105,6 @@
     height: 100%;
     margin: 0;
   }
-
   body {
     background: var(--bg);
     color: var(--ink);
@@ -94,7 +115,6 @@
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
-
   button,
   input,
   select,
@@ -102,18 +122,15 @@
     font: inherit;
     color: inherit;
   }
-
   a {
     color: inherit;
     text-decoration: none;
   }
-
   ::selection {
     background: var(--magenta);
     color: #fff;
   }
 }
-
 @layer components {
   /* ===== fondo: rejilla en perspectiva + scanlines + viñeta ===== */
   .av-bg {
@@ -122,8 +139,16 @@
     z-index: 0;
     pointer-events: none;
     background:
-      radial-gradient(120% 80% at 50% 0%, rgba(255, 0, 110, 0.08), transparent 60%),
-      radial-gradient(120% 80% at 50% 100%, rgba(0, 245, 255, 0.1), transparent 60%),
+      radial-gradient(
+        120% 80% at 50% 0%,
+        rgba(255, 0, 110, 0.08),
+        transparent 60%
+      ),
+      radial-gradient(
+        120% 80% at 50% 100%,
+        rgba(0, 245, 255, 0.1),
+        transparent 60%
+      ),
       var(--bg);
   }
   .av-bg::before {
@@ -135,8 +160,10 @@
     bottom: -10%;
     height: 70%;
     background:
-      linear-gradient(to right, rgba(0, 245, 255, 0.22) 1px, transparent 1px) 0 0 / 60px 60px,
-      linear-gradient(to bottom, rgba(0, 245, 255, 0.22) 1px, transparent 1px) 0 0 / 60px 60px;
+      linear-gradient(to right, rgba(0, 245, 255, 0.22) 1px, transparent 1px) 0
+        0 / 60px 60px,
+      linear-gradient(to bottom, rgba(0, 245, 255, 0.22) 1px, transparent 1px) 0
+        0 / 60px 60px;
     transform: perspective(600px) rotateX(60deg);
     transform-origin: center bottom;
     mask-image: linear-gradient(to top, black 0%, transparent 90%);
@@ -156,7 +183,6 @@
     mix-blend-mode: overlay;
     opacity: 0.6;
   }
-
   .av-noise {
     position: fixed;
     inset: 0;
@@ -165,7 +191,6 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1   0 0 0 0 1   0 0 0 0 1   0 0 0 0.08 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     opacity: 0.35;
   }
-
   /* ===== marco de la app (equivalente al #root del prototipo) ===== */
   .av-shell {
     position: relative;
@@ -174,39 +199,42 @@
     flex-direction: column;
     min-height: 100%;
   }
-
   /* ===== texto neón ===== */
   .neon-cyan {
     color: var(--cyan);
-    text-shadow: 0 0 6px rgba(0, 245, 255, 0.65), 0 0 16px rgba(0, 245, 255, 0.45);
+    text-shadow:
+      0 0 6px rgba(0, 245, 255, 0.65),
+      0 0 16px rgba(0, 245, 255, 0.45);
   }
   .neon-magenta {
     color: var(--magenta);
-    text-shadow: 0 0 6px rgba(255, 0, 110, 0.65), 0 0 16px rgba(255, 0, 110, 0.45);
+    text-shadow:
+      0 0 6px rgba(255, 0, 110, 0.65),
+      0 0 16px rgba(255, 0, 110, 0.45);
   }
   .neon-yellow {
     color: var(--yellow);
-    text-shadow: 0 0 6px rgba(245, 255, 0, 0.7), 0 0 16px rgba(245, 255, 0, 0.4);
+    text-shadow:
+      0 0 6px rgba(245, 255, 0, 0.7),
+      0 0 16px rgba(245, 255, 0, 0.4);
   }
   .neon-green {
     color: var(--green);
-    text-shadow: 0 0 6px rgba(0, 255, 136, 0.6), 0 0 16px rgba(0, 255, 136, 0.35);
+    text-shadow:
+      0 0 6px rgba(0, 255, 136, 0.6),
+      0 0 16px rgba(0, 255, 136, 0.35);
   }
-
   .flicker {
     animation: flicker 5s infinite steps(1, end);
   }
-
   .blink {
     animation: blink 1.2s steps(1, end) infinite;
   }
-
   /* ===== portadas generadas con CSS puro ===== */
   .cover-bg {
     position: absolute;
     inset: 0;
   }
-
   .cover-bricks {
     background:
       repeating-linear-gradient(
@@ -223,9 +251,12 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(0deg, transparent 0 32px, rgba(0, 0, 0, 0.4) 32px 33px);
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0 32px,
+      rgba(0, 0, 0, 0.4) 32px 33px
+    );
   }
-
   .cover-tetro {
     background: radial-gradient(circle at 50% 100%, #2a004a, #0a0a18);
   }
@@ -244,7 +275,6 @@
     filter: drop-shadow(0 0 8px rgba(0, 245, 255, 0.4));
     image-rendering: pixelated;
   }
-
   .cover-snake {
     background: linear-gradient(135deg, #003a2a, #0a0a18);
   }
@@ -254,14 +284,14 @@
     inset: 0;
     background-image:
       radial-gradient(circle at 70% 50%, var(--magenta) 0 6px, transparent 7px),
-      linear-gradient(90deg, var(--green) 0 40px, transparent 40px) 20% 50% / 200px 12px no-repeat,
-      linear-gradient(90deg, var(--green) 0 12px, transparent 12px) calc(20% + 40px)
-        calc(50% - 12px) / 12px 12px no-repeat,
-      linear-gradient(90deg, var(--green) 0 12px, transparent 12px) calc(20% + 28px)
-        calc(50% - 12px) / 12px 12px no-repeat;
+      linear-gradient(90deg, var(--green) 0 40px, transparent 40px) 20% 50% /
+        200px 12px no-repeat,
+      linear-gradient(90deg, var(--green) 0 12px, transparent 12px)
+        calc(20% + 40px) calc(50% - 12px) / 12px 12px no-repeat,
+      linear-gradient(90deg, var(--green) 0 12px, transparent 12px)
+        calc(20% + 28px) calc(50% - 12px) / 12px 12px no-repeat;
     filter: drop-shadow(0 0 6px rgba(0, 255, 136, 0.6));
   }
-
   .cover-glot {
     background: radial-gradient(circle at 50% 50%, #1a002a, #0a0a18);
   }
@@ -270,11 +300,24 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 30% 50%, var(--yellow) 0 38px, transparent 39px),
+      radial-gradient(
+        circle at 30% 50%,
+        var(--yellow) 0 38px,
+        transparent 39px
+      ),
       radial-gradient(circle at 30% 50%, transparent 0 0, transparent 28px),
       radial-gradient(circle at 70% 50%, var(--magenta) 0 6px, transparent 7px),
       radial-gradient(circle at 82% 50%, var(--cyan) 0 6px, transparent 7px);
-    clip-path: polygon(0 0, 30% 0, 30% 50%, 100% 30%, 100% 70%, 30% 50%, 30% 100%, 0 100%);
+    clip-path: polygon(
+      0 0,
+      30% 0,
+      30% 50%,
+      100% 30%,
+      100% 70%,
+      30% 50%,
+      30% 100%,
+      0 100%
+    );
     filter: drop-shadow(0 0 8px rgba(245, 255, 0, 0.5));
   }
   .cover-glot::before {
@@ -287,7 +330,6 @@
     font-size: 18px;
     text-shadow: 0 0 6px var(--cyan);
   }
-
   .cover-invaders {
     background: linear-gradient(180deg, #001a3a, #0a0a18);
   }
@@ -307,7 +349,6 @@
       radial-gradient(circle at 50% 80%, var(--cyan) 0 8px, transparent 9px);
     filter: drop-shadow(0 0 6px rgba(0, 255, 136, 0.6));
   }
-
   .cover-rocas {
     background: radial-gradient(circle at 50% 50%, #0a0a30, #000);
   }
@@ -332,7 +373,6 @@
     font-size: 22px;
     text-shadow: 0 0 8px var(--yellow);
   }
-
   .cover-rana {
     background: linear-gradient(180deg, #001f2a, #0a0a18);
   }
@@ -341,11 +381,14 @@
     position: absolute;
     inset: 0;
     background:
-      repeating-linear-gradient(0deg, rgba(0, 245, 255, 0.18) 0 20px, transparent 20px 40px),
+      repeating-linear-gradient(
+        0deg,
+        rgba(0, 245, 255, 0.18) 0 20px,
+        transparent 20px 40px
+      ),
       radial-gradient(circle at 50% 55%, var(--green) 0 14px, transparent 15px);
     filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.5));
   }
-
   .cover-duelo {
     background: #0a0a18;
   }
@@ -354,14 +397,14 @@
     position: absolute;
     inset: 0;
     background:
-      repeating-linear-gradient(0deg, var(--ink) 0 10px, transparent 10px 20px) 50% 0 / 2px 100%
-        no-repeat,
+      repeating-linear-gradient(0deg, var(--ink) 0 10px, transparent 10px 20px)
+        50% 0 / 2px 100% no-repeat,
       linear-gradient(var(--cyan), var(--cyan)) 6% 35% / 6px 30% no-repeat,
-      linear-gradient(var(--magenta), var(--magenta)) 88% 35% / 6px 30% no-repeat,
+      linear-gradient(var(--magenta), var(--magenta)) 88% 35% / 6px 30%
+        no-repeat,
       radial-gradient(circle at 60% 60%, var(--yellow) 0 5px, transparent 6px);
     filter: drop-shadow(0 0 6px rgba(0, 245, 255, 0.4));
   }
-
   .crt {
     position: relative;
     border-radius: 28px;
@@ -377,7 +420,11 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(120% 80% at 50% 30%, rgba(0, 245, 255, 0.05), transparent 60%);
+    background: radial-gradient(
+      120% 80% at 50% 30%,
+      rgba(0, 245, 255, 0.05),
+      transparent 60%
+    );
     pointer-events: none;
   }
   .crt-screen {
@@ -386,13 +433,19 @@
     background: #000;
     border-radius: 12px / 28px;
     overflow: hidden;
-    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 245, 255, 0.15);
+    box-shadow:
+      inset 0 0 60px rgba(0, 0, 0, 0.9),
+      inset 0 0 20px rgba(0, 245, 255, 0.15);
   }
   .crt-screen::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 4px);
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.18) 0 2px,
+      transparent 2px 4px
+    );
     pointer-events: none;
     mix-blend-mode: multiply;
   }
@@ -400,7 +453,11 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(120% 90% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.65));
+    background: radial-gradient(
+      120% 90% at 50% 50%,
+      transparent 60%,
+      rgba(0, 0, 0, 0.65)
+    );
     pointer-events: none;
   }
   .crt-content {
@@ -438,7 +495,6 @@
     background: var(--green);
     box-shadow: 0 0 6px var(--green);
   }
-
   /* juego simulado dentro de la pantalla */
   .game-arena {
     position: absolute;
@@ -452,8 +508,10 @@
     position: absolute;
     inset: 50% 0 0 0;
     background:
-      linear-gradient(to right, rgba(0, 245, 255, 0.4) 1px, transparent 1px) 0 0 / 40px 40px,
-      linear-gradient(to bottom, rgba(0, 245, 255, 0.4) 1px, transparent 1px) 0 0 / 40px 40px;
+      linear-gradient(to right, rgba(0, 245, 255, 0.4) 1px, transparent 1px) 0
+        0 / 40px 40px,
+      linear-gradient(to bottom, rgba(0, 245, 255, 0.4) 1px, transparent 1px) 0
+        0 / 40px 40px;
     transform: perspective(300px) rotateX(70deg);
     transform-origin: top;
     animation: gridscroll 4s linear infinite;
@@ -496,7 +554,6 @@
     box-shadow: 0 0 8px var(--yellow);
     animation: drift 2.8s ease-in-out infinite;
   }
-
   /* ===== misceláneos ===== */
   .fade-in {
     animation: fadeIn 240ms ease-out;
@@ -504,7 +561,6 @@
   .slide-in {
     animation: slideIn 260ms ease-out;
   }
-
   .tw-section {
     margin-bottom: 14px;
   }
@@ -515,7 +571,6 @@
     letter-spacing: 0.14em;
     margin-bottom: 8px;
   }
-
   .spinner {
     display: inline-block;
     width: 16px;
@@ -525,11 +580,9 @@
     animation: spinpix 0.6s steps(8) infinite;
     clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   }
-
   /* ===== landing (spec 02) =====
      Solo lo que Tailwind no expresa con comodidad. Rejillas, tipografía,
      bordes y resplandores de hover van en utilidades, en components/home/. */
-
   /* Entrada de las secciones al hacer scroll. La clase `in` la añade
      components/home/reveal.tsx desde un IntersectionObserver. */
   .reveal {
@@ -552,7 +605,6 @@
       transition: none;
     }
   }
-
   /* Siluetas pixel flotantes del hero. Los SVG llevan su relleno en el propio
      marcado; el `color` de aquí solo alimenta el drop-shadow. */
   .home-silos .silo {
@@ -618,7 +670,6 @@
     color: #00d4ff;
     animation-delay: -5s;
   }
-
   /* Degradados recortados sobre el texto: background-clip no se expresa bien
      con utilidades porque cada uno lleva además su propio drop-shadow.
      Ojo: `background-image`, no el atajo `background`, que reiniciaría el
@@ -644,27 +695,23 @@
     background-image: linear-gradient(180deg, #fff, var(--green));
     filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.5));
   }
-
   /* ===== acerca de (spec 03) =====
      Solo lo que Tailwind no expresa con comodidad: el degradado recortado del
      título, el escalonado por :nth-child del terminal y las dos animaciones
      con estado (shake del formulario inválido, parpadeo de los píxeles).
      Rejillas, bordes, LEDs y el marco discontinuo del formulario van en
      utilidades, en components/about/. */
-
   /* Pareja de .grad-text. No reutiliza .grad-cyan: el título de /acerca-de va
      de blanco a cian al 80%, no de cian a #4dd0e1. */
   .grad-about {
     background-image: linear-gradient(180deg, #fff, var(--cyan) 80%);
     filter: drop-shadow(0 0 14px rgba(0, 245, 255, 0.4));
   }
-
   /* El formulario se agita cuando falta algún campo. La clase la pone y quita
      components/about/contact-form.tsx durante 400 ms. */
   .shake {
     animation: shake 400ms;
   }
-
   /* Cada línea del terminal entra 180 ms después de la anterior. El retardo va
      por :nth-child porque el marcado es fijo y así no hay estado en React ni
      temporizadores: el escalonado es puramente CSS. */
@@ -701,15 +748,121 @@
       animation: none;
     }
   }
+  /* ===== modo claro: fondo, ruido, neón y marco CRT =====
+     Con luz de día el neón no brilla: la rejilla pasa a tinta cian sobre
+     papel, las scanlines oscurecen en vez de aclarar y los halos se reducen a
+     una sombra corta para que el texto no se emborrone. */
+  :root[data-theme="light"] .av-bg {
+    background:
+      radial-gradient(
+        120% 80% at 50% 0%,
+        rgba(188, 0, 87, 0.06),
+        transparent 60%
+      ),
+      radial-gradient(
+        120% 80% at 50% 100%,
+        rgba(0, 102, 111, 0.08),
+        transparent 60%
+      ),
+      var(--bg);
+  }
+  :root[data-theme="light"] .av-bg::before {
+    background:
+      linear-gradient(to right, rgba(0, 102, 111, 0.22) 1px, transparent 1px) 0
+        0 / 60px 60px,
+      linear-gradient(to bottom, rgba(0, 102, 111, 0.22) 1px, transparent 1px) 0
+        0 / 60px 60px;
+    opacity: 0.5;
+  }
+  :root[data-theme="light"] .av-bg::after {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      rgba(17, 19, 31, 0.035) 0 1px,
+      transparent 1px 3px
+    );
+    mix-blend-mode: multiply;
+  }
+  :root[data-theme="light"] .av-noise {
+    /* el grano blanco no se ve sobre papel: se invierte a gris tinta */
+    filter: invert(1);
+    opacity: 0.2;
+  }
+  :root[data-theme="light"] .neon-cyan,
+  :root[data-theme="light"] .neon-magenta,
+  :root[data-theme="light"] .neon-yellow,
+  :root[data-theme="light"] .neon-green {
+    text-shadow: 0 1px 0 rgba(17, 19, 31, 0.12);
+  }
+  /* De día las siluetas del hero pasan de luz a tinta: sin resplandor (un
+     drop-shadow oscuro sobre papel ensucia) y rellenas con el color de su
+     .sN, que en claro ya son los tokens oscurecidos. Las tres que llevan un
+     hex propio reciben su versión de tinta, ≥ 5:1 sobre --bg claro. Los
+     detalles con `fill` propio (ranura de la moneda, puntos) no se tocan. */
+  :root[data-theme="light"] .home-silos .silo {
+    filter: none;
+  }
+  :root[data-theme="light"] .home-silos .silo > g {
+    fill: currentColor;
+  }
+  :root[data-theme="light"] .home-silos .s5 {
+    color: #6c00a3;
+  }
+  :root[data-theme="light"] .home-silos .s7 {
+    color: #b0002f;
+  }
+  :root[data-theme="light"] .home-silos .s8 {
+    color: #006a85;
+  }
+  /* El mueble pasa de negro a plástico gris claro; la pantalla sigue siendo
+     un tubo, con el bisel oscuro y una viñeta mucho más suave para no
+     ensuciar el tablero claro de los motores. */
+  :root[data-theme="light"] .crt {
+    background: #c9cddb;
+    box-shadow:
+      0 0 0 6px #b4b9ca,
+      0 0 0 7px #9aa0b5,
+      0 30px 80px -20px rgba(0, 102, 111, 0.3);
+  }
+  :root[data-theme="light"] .crt::before {
+    background: radial-gradient(
+      120% 80% at 50% 30%,
+      rgba(255, 255, 255, 0.35),
+      transparent 60%
+    );
+  }
+  :root[data-theme="light"] .crt-screen {
+    /* los carteles sin motor se leen sobre el cristal: tiene que ser claro */
+    background: var(--bg-2);
+    box-shadow:
+      inset 0 0 40px rgba(17, 19, 31, 0.35),
+      inset 0 0 0 2px #2a2d3d;
+  }
+  :root[data-theme="light"] .crt-screen::after {
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(17, 19, 31, 0.07) 0 2px,
+      transparent 2px 4px
+    );
+  }
+  :root[data-theme="light"] .crt-screen::before {
+    background: radial-gradient(
+      120% 90% at 50% 50%,
+      transparent 65%,
+      rgba(17, 19, 31, 0.28)
+    );
+  }
+  :root[data-theme="light"] .crt-bottom {
+    color: var(--ink-dim);
+  }
 }
-
 /* ===== keyframes ===== */
 @keyframes gridscroll {
   to {
-    background-position: 0 60px, 0 60px;
+    background-position:
+      0 60px,
+      0 60px;
   }
 }
-
 @keyframes flicker {
   0%,
   18%,
@@ -726,47 +879,44 @@
     opacity: 0.35;
   }
 }
-
 @keyframes blink {
   50% {
     opacity: 0;
   }
 }
-
 @keyframes pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 transparent, inset 0 0 0 transparent;
+    box-shadow:
+      0 0 0 transparent,
+      inset 0 0 0 transparent;
   }
   50% {
-    box-shadow: 0 0 20px var(--cyan), inset 0 0 12px rgba(0, 245, 255, 0.45);
+    box-shadow:
+      0 0 20px var(--cyan),
+      inset 0 0 12px rgba(0, 245, 255, 0.45);
   }
 }
-
 @keyframes bob {
   50% {
     transform: translateX(-50%) translateY(-6px);
   }
 }
-
 @keyframes drift {
   50% {
     transform: translate(20px, 10px);
   }
 }
-
 @keyframes typewriter {
   to {
     width: 22ch;
   }
 }
-
 @keyframes caret {
   50% {
     border-color: transparent;
   }
 }
-
 @keyframes rise {
   from {
     opacity: 0;
@@ -777,7 +927,6 @@
     transform: translateY(0);
   }
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -788,7 +937,6 @@
     transform: none;
   }
 }
-
 @keyframes slideIn {
   from {
     opacity: 0;
@@ -799,13 +947,11 @@
     transform: none;
   }
 }
-
 @keyframes spinpix {
   to {
     transform: rotate(360deg);
   }
 }
-
 @keyframes float {
   0%,
   100% {
@@ -815,13 +961,11 @@
     transform: translateY(-14px) rotate(2deg);
   }
 }
-
 @keyframes bounce {
   50% {
     transform: translateY(6px);
   }
 }
-
 @keyframes tickin {
   from {
     opacity: 0;
@@ -832,7 +976,6 @@
     transform: none;
   }
 }
-
 /* Formulario de contacto rechazado en cliente: 0.4 s de traslación horizontal. */
 @keyframes shake {
   0%,
@@ -852,14 +995,12 @@
     transform: translateX(4px);
   }
 }
-
 /* Píxeles de la banda divisoria de /acerca-de. */
 @keyframes pxblink {
   50% {
     opacity: 0.2;
   }
 }
-
 /* Entrada de cada línea del terminal del formulario. */
 @keyframes termline {
   from {

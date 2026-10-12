@@ -1,12 +1,10 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button, buttonStyles } from "@/components/ui/button";
 import { useSession } from "@/lib/session-context";
-
 // El spec fija el colapso a 900px (el prototipo usaba 840px).
 const LINKS = [
   { href: "/", label: "Inicio" },
@@ -14,17 +12,14 @@ const LINKS = [
   { href: "/salon", label: "Salón de la Fama" },
   { href: "/acerca-de", label: "Acerca de" },
 ] as const;
-
 const DESKTOP_LINK =
   "relative px-[14px] py-[10px] font-pixel text-[9px] tracking-[0.16em] transition-colors duration-100";
 const DESKTOP_ACTIVE =
   "text-cyan [text-shadow:0_0_8px_rgba(0,245,255,0.65)] after:content-[''] after:absolute after:left-[14px] after:right-[14px] after:bottom-1 after:h-0.5 after:bg-cyan after:shadow-[0_0_8px_var(--cyan),0_0_16px_var(--cyan)]";
-
 export function Nav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { user, signOut } = useSession();
-
   // «Inicio» es la landing y coincide exacto; un juego (detalle o reproductor)
   // mantiene «Biblioteca» como sección activa.
   const isActive = (href: string) =>
@@ -33,12 +28,10 @@ export function Nav() {
       : href === "/biblioteca"
         ? pathname === "/biblioteca" || pathname.startsWith("/juegos")
         : pathname === href || pathname.startsWith(`${href}/`);
-
   const close = () => setOpen(false);
-
   return (
     <>
-      <nav className="sticky top-0 z-50 flex items-center gap-6 border-b border-line bg-[linear-gradient(180deg,rgba(10,10,15,0.92),rgba(10,10,15,0.78))] px-8 py-[14px] backdrop-blur-[8px] max-[900px]:px-4 max-[900px]:py-3">
+      <nav className="sticky top-0 z-50 flex items-center gap-6 border-b border-line bg-[linear-gradient(180deg,color-mix(in_srgb,var(--bg)_92%,transparent),color-mix(in_srgb,var(--bg)_78%,transparent))] px-8 py-[14px] backdrop-blur-[8px] max-[900px]:px-4 max-[900px]:py-3">
         <Link href="/" className="flex items-center gap-[10px]" onClick={close}>
           <span
             aria-hidden="true"
@@ -48,7 +41,6 @@ export function Nav() {
             ARCADE <span className="neon-magenta">VAULT</span>
           </span>
         </Link>
-
         <div className="ml-8 flex gap-1 max-[900px]:hidden">
           {LINKS.map(({ href, label }) => {
             const active = isActive(href);
@@ -64,9 +56,9 @@ export function Nav() {
             );
           })}
         </div>
-
         <div className="flex-1" />
-
+        {/* En móvil no cabe junto a la sesión: vive en el menú lateral. */}
+        <ThemeToggle className="mr-4 max-[900px]:hidden" />
         <div className="flex items-center gap-2 font-pixel text-[9px] text-yellow max-[900px]:hidden">
           <span
             aria-hidden="true"
@@ -74,7 +66,6 @@ export function Nav() {
           />
           <span>CRÉDITOS · 03</span>
         </div>
-
         {user ? (
           <Button variant="ghost" className="ml-4" onClick={signOut}>
             {user.name} ▾
@@ -88,7 +79,6 @@ export function Nav() {
             Iniciar Sesión
           </Link>
         )}
-
         <span className="hidden max-[900px]:inline-flex">
           <Button
             variant="ghost"
@@ -100,7 +90,6 @@ export function Nav() {
           </Button>
         </span>
       </nav>
-
       <div
         aria-hidden="true"
         onClick={close}
@@ -108,15 +97,15 @@ export function Nav() {
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
-
       <aside
         aria-hidden={!open}
         className={`fixed inset-y-0 right-0 z-[60] flex w-[min(320px,86vw)] flex-col gap-2 border-l border-line bg-bg-2 px-5 py-6 transition-transform duration-[220ms] ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="font-pixel uppercase leading-[1.25] neon-cyan mb-4 text-[11px] tracking-[0.04em]">MENÚ</div>
-
+        <div className="font-pixel uppercase leading-[1.25] neon-cyan mb-4 text-[11px] tracking-[0.04em]">
+          MENÚ
+        </div>
         {LINKS.map(({ href, label }) => {
           const active = isActive(href);
           return (
@@ -134,7 +123,6 @@ export function Nav() {
             </Link>
           );
         })}
-
         <Link
           href="/acceso"
           tabIndex={open ? undefined : -1}
@@ -146,9 +134,11 @@ export function Nav() {
         >
           {user ? "Cuenta" : "Iniciar Sesión"}
         </Link>
-
         <div className="flex-1" />
-
+        <ThemeToggle
+          className="mb-4 self-start"
+          tabIndex={open ? undefined : -1}
+        />
         <div className="font-pixel uppercase leading-[1.25] text-[9px] tracking-[0.16em] text-ink-faint">
           CRÉDITOS · 03
         </div>

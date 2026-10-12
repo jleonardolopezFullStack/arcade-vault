@@ -18,6 +18,7 @@
 
 import { isTypingTarget } from "@/lib/games/input";
 import type {
+  Appearance,
   GameEngine,
   GameEngineHooks,
   GameSnapshot,
@@ -38,6 +39,7 @@ import {
   PADDLE_H,
   PADDLE_W,
   PADDLE_Y,
+  PALETTES,
   POINTS_PER_BLOCK,
   W,
 } from "./constants";
@@ -79,11 +81,15 @@ const CAPTURED_KEYS = new Set([
 export function createLadrillosEngine(
   canvas: HTMLCanvasElement,
   hooks: GameEngineHooks,
+  appearance: Appearance,
 ): GameEngine {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("BLOQUE BUSTER: el canvas no da contexto 2d");
   // El narrowing de arriba no sobrevive dentro de las clausuras.
   const ctx: CanvasRenderingContext2D = context;
+  // ── Apariencia ─────────────────────────────────────────────────────────────
+  // La paleta activa. Cambiarla no toca nada de la partida.
+  let pal = PALETTES[appearance.skin][appearance.mode];
 
   // ── Estado de la partida ───────────────────────────────────────────────────
   const paddle: Paddle = { x: 0, y: PADDLE_Y, w: PADDLE_W, h: PADDLE_H };
@@ -241,16 +247,17 @@ export function createLadrillosEngine(
   }
 
   function draw(): void {
-    clear(ctx);
-    drawBlocks(ctx, blocks);
-    drawFlashes(ctx, flashes);
-    drawPaddle(ctx, paddle);
-    drawBall(ctx, ball);
+    clear(ctx, pal);
+    drawBlocks(ctx, pal, blocks);
+    drawFlashes(ctx, pal, flashes);
+    drawPaddle(ctx, pal, paddle);
+    drawBall(ctx, pal, ball);
     if (status === "playing") {
-      drawHud(ctx, { score, level, lives });
+      drawHud(ctx, pal, { score, level, lives });
     } else {
       drawOverlay(
         ctx,
+        pal,
         completado ? "¡COMPLETADO!" : "GAME OVER",
         `NIVEL ${level} · ${score} PUNTOS`,
         completado ? "win" : "gameOver",
@@ -298,6 +305,11 @@ export function createLadrillosEngine(
   }
 
   return {
+    setAppearance(look) {
+      pal = PALETTES[look.skin][look.mode];
+      // En pausa o tras el fin no hay bucle que repinte: se repinta a mano.
+      if (!destroyed && listening && rafId === null) draw();
+    },
     start() {
       if (destroyed) return;
       if (!listening) {

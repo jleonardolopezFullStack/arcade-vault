@@ -1,11 +1,12 @@
-// Dibujo de SERPENTINA con la paleta del Vault.
+// Dibujo de SERPENTINA con la paleta de la skin activa.
 //
 // **No se carga ninguna imagen.** El pack de sprites de frutas se descartó a
 // propósito —SPEC 09 §1, igual que SPEC 08 hizo con el spritesheet del
 // arkanoid—: las cinco siluetas son primitivas de canvas, así que `start()`
 // sigue siendo sincrónico y el motor no tiene fase de carga.
 //
-// Cada función recibe el `ctx`; ninguna lo lee del ámbito.
+// Cada función recibe el `ctx` y la paleta activa `pal`; ninguna los lee
+// del ámbito.
 import { formatScore } from "@/lib/format";
 import type { Cell, Dir, Fruit } from "./board";
 import {
@@ -17,11 +18,11 @@ import {
   FRUIT_R,
   H,
   HUD_H,
-  PALETTE,
   RARE_TTL,
   ROWS,
   W,
   type FruitShape,
+  type Palette,
 } from "./constants";
 /** Centro en píxeles de una celda de la rejilla. */
 function center(cell: Cell): { x: number; y: number } {
@@ -43,8 +44,8 @@ function mixHex(a: string, b: string, t: number): string {
   return `rgb(${at(r1, r2)}, ${at(g1, g2)}, ${at(b1, b2)})`;
 }
 /** Fondo del lienzo, antes de todo lo demás. */
-export function clear(ctx: CanvasRenderingContext2D): void {
-  ctx.fillStyle = PALETTE.bg;
+export function clear(ctx: CanvasRenderingContext2D, pal: Palette): void {
+  ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, W, H);
 }
 /**
@@ -57,10 +58,10 @@ export function clear(ctx: CanvasRenderingContext2D): void {
  * El marco es el límite que mata, así que se pinta: sin él, chocar contra una
  * pared invisible parecería un fallo.
  */
-export function drawBoard(ctx: CanvasRenderingContext2D): void {
-  ctx.fillStyle = PALETTE.boardFill;
+export function drawBoard(ctx: CanvasRenderingContext2D, pal: Palette): void {
+  ctx.fillStyle = pal.boardFill;
   ctx.fillRect(BOARD.x, BOARD.y, BOARD.w, BOARD.h);
-  ctx.strokeStyle = PALETTE.grid;
+  ctx.strokeStyle = pal.grid;
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let col = 1; col < COLS; col++) {
@@ -74,19 +75,20 @@ export function drawBoard(ctx: CanvasRenderingContext2D): void {
     ctx.lineTo(BOARD.x + BOARD.w, y);
   }
   ctx.stroke();
-  ctx.strokeStyle = PALETTE.frame;
+  ctx.strokeStyle = pal.frame;
   ctx.lineWidth = 2;
   ctx.strokeRect(BOARD.x - 1, BOARD.y - 1, BOARD.w + 2, BOARD.h + 2);
 }
 /**
- * La serpiente: cuerpo verde con glow, cabeza cian con dos ojos y los últimos
- * segmentos degradados hacia tinta tenue para que se lea dónde acaba.
+ * La serpiente: cuerpo con glow en neón, cabeza con dos ojos y los últimos
+ * segmentos degradados hacia `snakeTail` para que se lea dónde acaba.
  *
  * Se recorre de la cola a la cabeza para que la cabeza quede encima en los
  * cruces visuales de un giro cerrado.
  */
 export function drawSnake(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   snake: readonly Cell[],
   dir: Dir | null,
 ): void {
@@ -96,20 +98,21 @@ export function drawSnake(
   // gris en vez de verde. El degradado sirve para leer dónde acaba una
   // serpiente larga; en una corta se ve entera de un vistazo.
   const fade = Math.min(5, Math.max(0, snake.length - 4));
-  ctx.shadowColor = PALETTE.snake;
-  ctx.shadowBlur = 8;
+  ctx.shadowColor = pal.snake;
+  // Sin halo fuera del neón: retro y clásico son planos.
+  ctx.shadowBlur = pal.glow ? 8 : 0;
   for (let i = snake.length - 1; i >= 1; i--) {
     // `from` es la distancia a la punta de la cola: 0 es el último segmento.
     const from = snake.length - 1 - i;
     // El 0,8 evita que la punta llegue a tinta pura y parezca otra cosa.
     const t = fade > 0 && from < fade ? (1 - from / fade) * 0.8 : 0;
-    ctx.fillStyle = mixHex(PALETTE.snake, PALETTE.snakeTail, t);
+    ctx.fillStyle = mixHex(pal.snake, pal.snakeTail, t);
     const c = center(snake[i]);
     ctx.fillRect(c.x - size / 2, c.y - size / 2, size, size);
   }
   const head = center(snake[0]);
-  ctx.fillStyle = PALETTE.head;
-  ctx.shadowColor = PALETTE.head;
+  ctx.fillStyle = pal.head;
+  ctx.shadowColor = pal.head;
   ctx.fillRect(head.x - size / 2, head.y - size / 2, size, size);
   ctx.shadowBlur = 0;
   // Los ojos miran hacia donde se va. Con la serpiente parada todavía no hay
@@ -123,7 +126,7 @@ export function drawSnake(
   const px = look.dr;
   const py = look.dc;
   const eye = 3;
-  ctx.fillStyle = PALETTE.eye;
+  ctx.fillStyle = pal.eye;
   for (const side of [-1, 1]) {
     const ex = head.x + look.dc * 3 + px * side * 3;
     const ey = head.y + look.dr * 3 + py * side * 3;
@@ -204,13 +207,17 @@ function shape(
  * el tablero; es lo que hace innecesario distinguir una baya de una manzana a
  * 14 px.
  */
-export function drawFruit(ctx: CanvasRenderingContext2D, fruit: Fruit): void {
+export function drawFruit(
+  ctx: CanvasRenderingContext2D,
+  pal: Palette,
+  fruit: Fruit,
+): void {
   const { x, y } = center(fruit);
-  const color = fruit.rare ? PALETTE.fruitRare : PALETTE.fruit;
+  const color = fruit.rare ? pal.fruitRare : pal.fruit;
   ctx.save();
   ctx.fillStyle = color;
   ctx.shadowColor = color;
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = pal.glow ? 10 : 0;
   shape(ctx, fruit.shape, x, y, FRUIT_R);
   if (fruit.rare) {
     ctx.shadowBlur = 0;
@@ -232,16 +239,17 @@ export function drawFruit(ctx: CanvasRenderingContext2D, fruit: Fruit): void {
  */
 export function drawHud(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   stats: { score: number; level: number; lives: number },
 ): void {
   ctx.textBaseline = "top";
-  ctx.fillStyle = PALETTE.hudLabel;
+  ctx.fillStyle = pal.hudLabel;
   ctx.font = `10px ${FONT_MONO}`;
   ctx.textAlign = "left";
   ctx.fillText("PUNTUACIÓN", BOARD.x, 8);
   ctx.textAlign = "center";
   ctx.fillText("NIVEL", W / 2, 8);
-  ctx.fillStyle = PALETTE.hud;
+  ctx.fillStyle = pal.hud;
   ctx.font = `16px ${FONT_PIXEL}`;
   ctx.textAlign = "left";
   ctx.fillText(formatScore(stats.score), BOARD.x, 22);
@@ -251,7 +259,7 @@ export function drawHud(
   const gap = 5;
   for (let i = 0; i < stats.lives; i++) {
     const x = W - BOARD.x - (stats.lives - i) * (pip + gap);
-    ctx.fillStyle = PALETTE.head;
+    ctx.fillStyle = pal.head;
     ctx.fillRect(x, (HUD_H - pip) / 2, pip, pip);
   }
 }
@@ -264,18 +272,19 @@ export function drawHud(
  */
 export function drawOverlay(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   title: string,
   sub: string,
   tone: "gameOver" | "win",
 ): void {
-  ctx.fillStyle = PALETTE.overlay;
+  ctx.fillStyle = pal.overlay;
   ctx.fillRect(0, 0, W, H);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = PALETTE[tone];
+  ctx.fillStyle = pal[tone];
   ctx.font = `30px ${FONT_PIXEL}`;
   ctx.fillText(title, W / 2, H / 2 - 18);
-  ctx.fillStyle = PALETTE.hud;
+  ctx.fillStyle = pal.hud;
   ctx.font = `18px ${FONT_MONO}`;
   ctx.fillText(sub, W / 2, H / 2 + 22);
 }

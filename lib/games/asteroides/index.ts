@@ -9,14 +9,19 @@
 //   - Desde `gameover` ya no se reinicia con Espacio: reinicia el modal de la
 //     plataforma a través de restart().
 // La física, los tamaños, las velocidades y la puntuación son idénticos.
-import type { GameEngine, GameEngineHooks, GameSnapshot } from "../types";
+import type {
+  Appearance,
+  GameEngine,
+  GameEngineHooks,
+  GameSnapshot,
+} from "../types";
 import {
   FONT_MONO,
   FONT_PIXEL,
   INITIAL_LIVES,
   LEVEL_1_ASTEROIDS,
   MAX_DT,
-  PALETTE,
+  PALETTES,
   POWERUP_DROP_CHANCE,
   POWERUP_DURATION,
   H,
@@ -37,6 +42,7 @@ type Status = "playing" | "dead" | "gameover";
 export function createAsteroidesEngine(
   canvas: HTMLCanvasElement,
   hooks: GameEngineHooks,
+  appearance: Appearance,
 ): GameEngine {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("ROCAS: el canvas no da contexto 2d");
@@ -70,6 +76,9 @@ export function createAsteroidesEngine(
     for (const code of Object.keys(keys)) keys[code] = false;
     for (const code of Object.keys(justPressed)) justPressed[code] = false;
   }
+  // ── Apariencia ──────────────────────────────────────────────────────────────
+  // La paleta activa. Cambiarla no toca nada de la partida.
+  let pal = PALETTES[appearance.skin][appearance.mode];
   // ── Estado de la partida ──────────────────────────────────────────────────
   let ship = new Ship();
   let bullets: Bullet[] = [];
@@ -231,7 +240,7 @@ export function createAsteroidesEngine(
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(-Math.PI / 2);
-    ctx.strokeStyle = PALETTE.ship;
+    ctx.strokeStyle = pal.ship;
     ctx.lineWidth = 1.2;
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -244,7 +253,7 @@ export function createAsteroidesEngine(
     ctx.restore();
   }
   function drawHUD() {
-    ctx.fillStyle = PALETTE.hud;
+    ctx.fillStyle = pal.hud;
     ctx.font = `15px ${FONT_MONO}`;
     ctx.textBaseline = "alphabetic";
     ctx.textAlign = "left";
@@ -254,27 +263,27 @@ export function createAsteroidesEngine(
     for (let i = 0; i < lives; i++) drawLifeIcon(W - 16 - i * 22, 18);
     if (ship.tripleShot > 0) {
       ctx.textAlign = "left";
-      ctx.fillStyle = PALETTE.powerUp;
+      ctx.fillStyle = pal.powerUp;
       ctx.fillText(`3x  ${ship.tripleShot.toFixed(1)}s`, 14, 46);
     }
   }
   function drawOverlay(title: string, sub: string) {
     ctx.textAlign = "center";
-    ctx.fillStyle = PALETTE.hud;
+    ctx.fillStyle = pal.hud;
     ctx.font = `34px ${FONT_PIXEL}`;
     ctx.fillText(title, W / 2, H / 2 - 18);
     ctx.font = `18px ${FONT_MONO}`;
-    ctx.fillStyle = PALETTE.rock;
+    ctx.fillStyle = pal.hudDim;
     ctx.fillText(sub, W / 2, H / 2 + 22);
   }
   function draw() {
-    ctx.fillStyle = PALETTE.bg;
+    ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, W, H);
-    particles.forEach((p) => p.draw(ctx));
-    asteroids.forEach((a) => a.draw(ctx));
-    powerUps.forEach((p) => p.draw(ctx));
-    bullets.forEach((b) => b.draw(ctx));
-    ship.draw(ctx);
+    particles.forEach((p) => p.draw(ctx, pal));
+    asteroids.forEach((a) => a.draw(ctx, pal));
+    powerUps.forEach((p) => p.draw(ctx, pal));
+    bullets.forEach((b) => b.draw(ctx, pal));
+    ship.draw(ctx, pal);
     drawHUD();
     if (status === "gameover") drawOverlay("GAME OVER", `PUNTAJE: ${score}`);
   }
@@ -297,6 +306,11 @@ export function createAsteroidesEngine(
     rafId = null;
   }
   return {
+    setAppearance(look) {
+      pal = PALETTES[look.skin][look.mode];
+      // En pausa no hay bucle que repinte: se repinta una vez a mano.
+      if (!destroyed && listening && rafId === null) draw();
+    },
     start() {
       if (destroyed) return;
       if (!listening) {

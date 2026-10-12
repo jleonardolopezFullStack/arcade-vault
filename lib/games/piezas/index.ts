@@ -12,9 +12,11 @@
 // - Desaparecen su pausa en `KeyP`, su overlay propio, su botón de reinicio y
 //   su conmutador de tema con localStorage. Pausa, reinicio y fin de partida
 //   los gobierna la plataforma.
-// - Los colores son los del Vault (ver PIECE_COLORS en ./constants).
+// - Los colores dependen de la skin (ver PALETTES en ./constants); los del
+//   original son la skin `clasico`.
 import { isTypingTarget } from "@/lib/games/input";
 import type {
+  Appearance,
   GameEngine,
   GameEngineHooks,
   GameSnapshot,
@@ -36,6 +38,7 @@ import {
   levelFor,
   LINE_SCORES,
   MAX_DT,
+  PALETTES,
   SOFT_DROP_POINTS,
 } from "./constants";
 import {
@@ -62,11 +65,15 @@ const CAPTURED_KEYS = new Set([
 export function createPiezasEngine(
   canvas: HTMLCanvasElement,
   hooks: GameEngineHooks,
+  appearance: Appearance,
 ): GameEngine {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("CAÍDA: el canvas no da contexto 2d");
   // La narrowing de arriba no sobrevive dentro de las clausuras.
   const ctx: CanvasRenderingContext2D = context;
+  // ── Apariencia ─────────────────────────────────────────────────────────────
+  // La paleta activa. Cambiarla no toca nada de la partida.
+  let pal = PALETTES[appearance.skin][appearance.mode];
   // ── Estado de la partida ───────────────────────────────────────────────────
   let board: Board = createBoard();
   let current: Piece = randomPiece();
@@ -188,17 +195,17 @@ export function createPiezasEngine(
     }
   }
   function draw(): void {
-    clear(ctx);
-    drawGrid(ctx);
-    drawBoard(ctx, board);
+    clear(ctx, pal);
+    drawGrid(ctx, pal);
+    drawBoard(ctx, pal, board);
     if (status === "playing") {
-      drawGhost(ctx, current, ghostY(board, current));
-      drawPiece(ctx, current);
+      drawGhost(ctx, pal, current, ghostY(board, current));
+      drawPiece(ctx, pal, current);
     }
-    drawNextPanel(ctx, next);
-    drawHud(ctx, { score, lines, level });
+    drawNextPanel(ctx, pal, next);
+    drawHud(ctx, pal, { score, lines, level });
     if (status === "gameover")
-      drawOverlay(ctx, "GAME OVER", `LÍNEAS: ${lines}`);
+      drawOverlay(ctx, pal, "GAME OVER", `LÍNEAS: ${lines}`);
   }
   /** Solo avisa al HUD cuando alguno de los cuatro valores cambia de verdad. */
   function emitSnapshot(): void {
@@ -235,6 +242,11 @@ export function createPiezasEngine(
     rafId = null;
   }
   return {
+    setAppearance(look) {
+      pal = PALETTES[look.skin][look.mode];
+      // En pausa o tras el fin no hay bucle que repinte: se repinta a mano.
+      if (!destroyed && listening && rafId === null) draw();
+    },
     start() {
       if (destroyed) return;
       if (!listening) {
