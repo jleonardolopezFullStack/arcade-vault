@@ -1,7 +1,7 @@
 # Arcade Vault — To Do de sugerencias de juegos
 
 > Mantenido por el agente `game-planner`. Marca `[x]` o mueve entradas a mano; el agente lo respeta.
-> Última actualización: 2026-10-06
+> Última actualización: 2026-10-12
 
 ## ⭐ Recomendado ahora
 
@@ -10,7 +10,6 @@
 
 ## 💡 Sugeridos
 
-- [ ] **─────────────────────────────────────────────────────────────────────────** (`ranaria`) — MOTOR · esfuerzo M — puntuación clara por avance/nenúfares + bonus de tiempo; riesgo: colisiones con troncos y temporizador por vida · sugerido 2026-10-06
 - [ ] **DUELO PIXEL** (`duelo-pixel`) — MOTOR · esfuerzo S — única ficha VERSUS; motor trivial pero la puntuación de ranking es débil (Pong contra CPU) y el modo 2 jugadores locales no genera marca; habría que redefinir qué se puntúa · sugerido 2026-10-06
 - [ ] **GLOTÓN** (`gloton`) — MOTOR · esfuerzo L — muy reconocible, pero laberinto + IA de 4 fantasmas con estados es el mayor riesgo del catálogo; mejor después de INVASORES · sugerido 2026-10-06
 
@@ -58,6 +57,7 @@
 - [x] **CAÍDA** (`caida`) — motor `lib/games/piezas/` · SPEC 07
 - [x] **BLOQUE BUSTER** (`bloque-buster`) — motor `lib/games/ladrillos/` · SPEC 08
 - [x] **SERPENTINA** (`serpentina`) — motor `lib/games/serpiente/` · SPEC 09
+- [x] **RANARIA** (`ranaria`) — motor `lib/games/rana/` · game jam `specs/game-jam/ranaria/` (01 reglas · 02 motor · 03 río vivo)
 
 ## ❌ Descartados
 

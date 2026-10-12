@@ -6,20 +6,19 @@
 //     `Ship.update()` recibe las teclas mantenidas.
 //   - Las dimensiones del mundo llegan de ./constants, que son constantes, no
 //     estado de partida.
-//   - Los colores del original (blanco, cian claro, naranja) se sustituyen por
-//     PALETTE, la paleta del Vault.
+//   - Los colores del original (blanco, cian claro, naranja) viven en la skin
+//     `clasico`; cada `draw()` recibe como `pal` la paleta activa.
 // La física, los tamaños, las velocidades y la puntuación son idénticos.
 import {
   FONT_MONO,
   H,
-  INK_RGB,
-  PALETTE,
   POINTS,
   POWERUP_TTL,
   RADII,
   SPEEDS,
   TRIPLE_SPREAD,
   W,
+  type Palette,
 } from "./constants";
 import { rand, randInt, wrap } from "./utils";
 /** Teclas mantenidas, indexadas por `KeyboardEvent.code`. Solo se leen. */
@@ -45,8 +44,8 @@ export class Bullet {
     this.ttl -= dt;
     if (this.ttl <= 0) this.dead = true;
   }
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = PALETTE.bullet;
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
+    ctx.fillStyle = pal.bullet;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fill();
@@ -98,11 +97,11 @@ export class Asteroid {
       new Asteroid(this.x, this.y, this.size - 1),
     ];
   }
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
-    ctx.strokeStyle = PALETTE.rock;
+    ctx.strokeStyle = pal.rock;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -136,18 +135,18 @@ export class PowerUp {
     this.ttl -= dt;
     if (this.ttl <= 0) this.dead = true;
   }
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
     if (this.ttl < 2 && Math.floor(this.ttl * 8) % 2 === 0) return;
     const pulse = 0.85 + Math.sin(performance.now() / 150) * 0.15;
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(Math.PI / 4);
-    ctx.strokeStyle = PALETTE.powerUp;
+    ctx.strokeStyle = pal.powerUp;
     ctx.lineWidth = 2;
     const r = this.radius * pulse;
     ctx.strokeRect(-r, -r, r * 2, r * 2);
     ctx.restore();
-    ctx.fillStyle = PALETTE.powerUp;
+    ctx.fillStyle = pal.powerUp;
     ctx.font = `bold 12px ${FONT_MONO}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -217,7 +216,7 @@ export class Ship {
     }
     return [new Bullet(ox, oy, this.angle)];
   }
-  draw(ctx: CanvasRenderingContext2D) {
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
     if (this.dead) return;
     // Parpadeo durante invencibilidad de reaparición
     if (this.invincible > 0 && Math.floor(this.invincible * 8) % 2 === 0)
@@ -225,7 +224,7 @@ export class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    ctx.strokeStyle = PALETTE.ship;
+    ctx.strokeStyle = pal.ship;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     // Silueta clásica: triángulo con muesca trasera
@@ -242,7 +241,7 @@ export class Ship {
       ctx.moveTo(-8, -4);
       ctx.lineTo(-8 - rand(6, 14), 0);
       ctx.lineTo(-8, 4);
-      ctx.strokeStyle = PALETTE.thrust;
+      ctx.strokeStyle = pal.thrust;
       ctx.stroke();
     }
     ctx.restore();
@@ -272,13 +271,15 @@ export class Particle {
     this.ttl -= dt;
     if (this.ttl <= 0) this.dead = true;
   }
-  draw(ctx: CanvasRenderingContext2D) {
-    const alpha = this.ttl / this.life;
-    ctx.strokeStyle = `rgba(${INK_RGB}, ${alpha.toFixed(2)})`;
+  draw(ctx: CanvasRenderingContext2D, pal: Palette) {
+    // El alfa va en globalAlpha y no en el color: así la paleta sigue en hex.
+    ctx.globalAlpha = this.ttl / this.life;
+    ctx.strokeStyle = pal.particle;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
     ctx.lineTo(this.x - this.vx * 0.05, this.y - this.vy * 0.05);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 }

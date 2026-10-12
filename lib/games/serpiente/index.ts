@@ -16,6 +16,7 @@
 // dibujar, pero la serpiente solo avanza cuando el acumulador llena un tick.
 import { isTypingTarget } from "@/lib/games/input";
 import type {
+  Appearance,
   GameEngine,
   GameEngineHooks,
   GameSnapshot,
@@ -42,6 +43,7 @@ import {
   GROW_COMMON,
   GROW_RARE,
   MAX_DT,
+  PALETTES,
   POINTS_COMMON,
   POINTS_RARE,
   RESPAWN_DELAY,
@@ -69,11 +71,15 @@ const TURN_KEYS: Record<string, Dir> = {
 export function createSerpienteEngine(
   canvas: HTMLCanvasElement,
   hooks: GameEngineHooks,
+  appearance: Appearance,
 ): GameEngine {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("SERPENTINA: el canvas no da contexto 2d");
   // El narrowing de arriba no sobrevive dentro de las clausuras.
   const ctx: CanvasRenderingContext2D = context;
+  // ── Apariencia ─────────────────────────────────────────────────────────────
+  // La paleta activa. Cambiarla no toca nada de la partida.
+  let pal = PALETTES[appearance.skin][appearance.mode];
   // ── Estado de la partida ───────────────────────────────────────────────────
   let snake: Cell[] = startSnake();
   /** `null` = parada. Arranca así: el primer movimiento lo elige el jugador. */
@@ -246,14 +252,15 @@ export function createSerpienteEngine(
     }
   }
   function draw(): void {
-    clear(ctx);
-    drawBoard(ctx);
-    if (fruit) drawFruit(ctx, fruit);
-    drawSnake(ctx, snake, dir);
-    drawHud(ctx, { score, level, lives });
+    clear(ctx, pal);
+    drawBoard(ctx, pal);
+    if (fruit) drawFruit(ctx, pal, fruit);
+    drawSnake(ctx, pal, snake, dir);
+    drawHud(ctx, pal, { score, level, lives });
     if (status === "dead") {
       drawOverlay(
         ctx,
+        pal,
         "VIDA PERDIDA",
         lives === 1 ? "TE QUEDA 1 VIDA" : `TE QUEDAN ${lives} VIDAS`,
         "gameOver",
@@ -261,6 +268,7 @@ export function createSerpienteEngine(
     } else if (status === "gameover") {
       drawOverlay(
         ctx,
+        pal,
         completado ? "¡TABLERO COMPLETO!" : "GAME OVER",
         `NIVEL ${level} · ${score} PUNTOS`,
         completado ? "win" : "gameOver",
@@ -301,6 +309,11 @@ export function createSerpienteEngine(
     rafId = null;
   }
   return {
+    setAppearance(look) {
+      pal = PALETTES[look.skin][look.mode];
+      // En pausa o tras el fin no hay bucle que repinte: se repinta a mano.
+      if (!destroyed && listening && rafId === null) draw();
+    },
     start() {
       if (destroyed) return;
       if (!listening) {

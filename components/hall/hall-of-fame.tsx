@@ -10,7 +10,7 @@ import { useSession } from "@/lib/session-context";
 import { normalizeAlias } from "@/lib/submit-score";
 const STAGGER_MS = 50;
 const ROW =
-  "grid grid-cols-[70px_1fr_1fr_140px] items-center gap-2.5 px-[18px] py-3 max-[720px]:grid-cols-[50px_1fr_90px_90px] max-[720px]:px-3 max-[720px]:py-2.5";
+  "grid grid-cols-[70px_1fr_1fr_140px] items-center gap-2.5 px-[18px] py-3 max-[720px]:grid-cols-[44px_minmax(0,1fr)_84px_80px] max-[720px]:px-3 max-[720px]:py-2.5";
 const ROW_TEXT = "font-mono text-[13px] max-[720px]:text-xs";
 // Oro, plata y bronce para las tres primeras filas de la tabla.
 const MEDALS = [
@@ -179,7 +179,9 @@ export function HallOfFame({
                   >
                     #{String(row.rank).padStart(2, "0")}
                   </div>
-                  <div className={mine ? "text-yellow" : "text-ink"}>
+                  <div
+                    className={`truncate ${mine ? "text-yellow" : "text-ink"}`}
+                  >
                     {row.name}
                     {mine && (
                       <span className="ml-2 font-pixel text-[9px] tracking-[0.16em] text-yellow">

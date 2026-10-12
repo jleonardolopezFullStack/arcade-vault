@@ -3,12 +3,20 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { submitScore } from "@/app/juegos/[id]/jugar/actions";
 import { GameOverModal } from "@/components/player/game-over-modal";
+import { SkinPicker } from "@/components/player/skin-picker";
+import { useColorMode } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import type { Game } from "@/lib/catalog";
 import { formatScore } from "@/lib/format";
+import { DEFAULT_SKIN, isSkinId, skinStorageKey } from "@/lib/games/appearance";
 import { isTypingTarget } from "@/lib/games/input";
 import { getEngineFactory } from "@/lib/games/registry";
-import type { GameEngine, GameSnapshot } from "@/lib/games/types";
+import type {
+  Appearance,
+  GameEngine,
+  GameSnapshot,
+  SkinId,
+} from "@/lib/games/types";
 import { useSession } from "@/lib/session-context";
 import { SUBMIT_SCORE_IDLE, type SubmitScoreState } from "@/lib/submit-score";
 // El HUD arranca con el estado inicial de una partida; el motor lo corrige en
@@ -66,8 +74,16 @@ export function GamePlayer({ game }: { game: Game }) {
   // null mientras no se sabe: la consulta es de cliente, nunca del render del
   // servidor.
   const [coarsePointer, setCoarsePointer] = useState<boolean | null>(null);
+  // Skin por juego, guardada en localStorage. null hasta leerla: como la
+  // sesión, solo se lee tras montar para no romper la hidratación.
+  const [skin, setSkin] = useState<SkinId | null>(null);
+  const mode = useColorMode();
+  // El motor se monta una sola vez con la apariencia de ese momento; los
+  // cambios posteriores le llegan por setAppearance, sin remontar.
+  const appearanceRef = useRef<Appearance | null>(null);
   const factory = getEngineFactory(game.id);
   const playable = factory !== null && coarsePointer === false;
+  const ready = playable && skin !== null && mode !== null;
   useEffect(() => {
     const query = window.matchMedia("(pointer: coarse)");
     const sync = () => setCoarsePointer(query.matches);
@@ -75,19 +91,52 @@ export function GamePlayer({ game }: { game: Game }) {
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
   }, []);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    let saved: unknown = null;
+    try {
+      saved = window.localStorage.getItem(skinStorageKey(game.id));
+    } catch {
+      // sin almacenamiento: se queda la skin por defecto
+    }
+    setSkin(isSkinId(saved) ? saved : DEFAULT_SKIN);
+  }, [game.id]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+  const chooseSkin = useCallback(
+    (next: SkinId) => {
+      setSkin(next);
+      try {
+        window.localStorage.setItem(skinStorageKey(game.id), next);
+      } catch {}
+    },
+    [game.id],
+  );
+  // Skin o modo cambiados con la partida en marcha, en pausa o terminada: el
+  // motor repinta sin tocar la puntuación.
+  useEffect(() => {
+    if (skin === null || mode === null) return;
+    const next = { skin, mode };
+    appearanceRef.current = next;
+    engineRef.current?.setAppearance(next);
+  }, [skin, mode]);
   // Montaje del motor. Pausa y game over se manejan con métodos, nunca
   // remontando (remontar perdería la partida).
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!factory || !playable || !canvas) return;
-    const engine = factory(canvas, {
-      onSnapshot: setSnapshot,
-      onGameOver: (score) => {
-        setFinalScore(score);
-        setSaveState(SUBMIT_SCORE_IDLE);
-        setOver(true);
+    const initial = appearanceRef.current;
+    if (!factory || !ready || !canvas || !initial) return;
+    const engine = factory(
+      canvas,
+      {
+        onSnapshot: setSnapshot,
+        onGameOver: (score) => {
+          setFinalScore(score);
+          setSaveState(SUBMIT_SCORE_IDLE);
+          setOver(true);
+        },
       },
-    });
+      initial,
+    );
     engineRef.current = engine;
     engine.start();
     // Imprescindible: sin esto el doble montaje de React en modo estricto deja
@@ -96,7 +145,7 @@ export function GamePlayer({ game }: { game: Game }) {
       engine.destroy();
       engineRef.current = null;
     };
-  }, [factory, playable]);
+  }, [factory, ready]);
   const exit = useCallback(() => {
     router.push(`/juegos/${game.id}`);
   }, [router, game.id]);
@@ -168,7 +217,7 @@ export function GamePlayer({ game }: { game: Game }) {
               <div className="flex flex-col gap-1">
                 <div className={HUD_LABEL}>Puntuación</div>
                 <div
-                  className={`${HUD_VALUE} text-cyan [text-shadow:0_0_6px_rgba(0,245,255,0.5)]`}
+                  className={`${HUD_VALUE} text-cyan [text-shadow:0_0_6px_rgba(0,245,255,0.5)] in-data-[theme=light]:[text-shadow:none]`}
                 >
                   {formatScore(snapshot.score)}
                 </div>
@@ -180,7 +229,7 @@ export function GamePlayer({ game }: { game: Game }) {
                   {snapshot.lines === undefined ? "Vidas" : "Líneas"}
                 </div>
                 <div
-                  className={`${HUD_VALUE} text-magenta [text-shadow:0_0_6px_rgba(255,0,110,0.5)]`}
+                  className={`${HUD_VALUE} text-magenta [text-shadow:0_0_6px_rgba(255,0,110,0.5)] in-data-[theme=light]:[text-shadow:none]`}
                 >
                   {snapshot.lines !== undefined
                     ? formatScore(snapshot.lines)
@@ -192,7 +241,7 @@ export function GamePlayer({ game }: { game: Game }) {
               <div className="flex flex-col gap-1">
                 <div className={HUD_LABEL}>Nivel</div>
                 <div
-                  className={`${HUD_VALUE} text-yellow [text-shadow:0_0_6px_rgba(245,255,0,0.5)]`}
+                  className={`${HUD_VALUE} text-yellow [text-shadow:0_0_6px_rgba(245,255,0,0.5)] in-data-[theme=light]:[text-shadow:none]`}
                 >
                   {String(snapshot.level).padStart(2, "0")}
                 </div>
@@ -200,9 +249,12 @@ export function GamePlayer({ game }: { game: Game }) {
             </>
           )}
         </div>
-        <div className="flex gap-2.5">
+        <div className="flex flex-wrap gap-2.5">
           {playable && (
             <>
+              {skin !== null && (
+                <SkinPicker value={skin} onChange={chooseSkin} />
+              )}
               <Button variant="yellow" onClick={togglePause}>
                 {paused ? "REANUDAR" : "PAUSA"}
               </Button>
@@ -252,7 +304,7 @@ export function GamePlayer({ game }: { game: Game }) {
             />
           )}
           {paused && (
-            <div className="crt-content z-5 bg-black/60">
+            <div className="crt-content z-5 bg-black/60 in-data-[theme=light]:bg-bg/80">
               <div>
                 <div className="font-pixel neon-yellow text-[22px] leading-[1.25] tracking-[0.04em] uppercase">
                   EN PAUSA

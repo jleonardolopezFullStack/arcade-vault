@@ -1,11 +1,12 @@
-// Dibujo de RANARIA con la paleta del Vault.
+// Dibujo de RANARIA con la paleta de la skin activa.
 //
 // **No se carga ninguna imagen.** Rana, vehículos, troncos, tortugas y
 // nenúfares son primitivas de canvas, así que `start()` sigue siendo
 // sincrónico y el motor no tiene fase de carga. Ninguna función llama a la
 // API de imágenes del canvas.
 //
-// Cada función recibe el `ctx`; ninguna lo lee del ámbito.
+// Cada función recibe el `ctx` y la paleta activa `pal`; ninguna los lee
+// del ámbito.
 import { formatScore } from "@/lib/format";
 import {
   BOARD,
@@ -19,9 +20,8 @@ import {
   HOP_ANIM,
   HUD_H,
   type HopDir,
-  INK_RGB,
+  type Palette,
   MEDIAN_ROW,
-  PALETTE,
   RIVER_ROWS,
   ROAD_ROWS,
   START_ROW,
@@ -61,8 +61,8 @@ export const DEATH_LABEL: Record<DeathCause, string> = {
   mordida: "MORDIDA",
 };
 /** Fondo del lienzo, antes de todo lo demás. */
-export function clear(ctx: CanvasRenderingContext2D): void {
-  ctx.fillStyle = PALETTE.bg;
+export function clear(ctx: CanvasRenderingContext2D, pal: Palette): void {
+  ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, W, H);
 }
 /**
@@ -70,10 +70,10 @@ export function clear(ctx: CanvasRenderingContext2D): void {
  * discontinuas y salida, más el borde. El borde es el límite que mata al ser
  * arrastrado, así que se pinta.
  */
-export function drawBoard(ctx: CanvasRenderingContext2D): void {
-  ctx.fillStyle = PALETTE.bank;
+export function drawBoard(ctx: CanvasRenderingContext2D, pal: Palette): void {
+  ctx.fillStyle = pal.bank;
   ctx.fillRect(BOARD.x, rowTop(HOME_ROW), BOARD.w, CELL);
-  ctx.fillStyle = PALETTE.water;
+  ctx.fillStyle = pal.water;
   ctx.fillRect(
     BOARD.x,
     rowTop(RIVER_ROWS[0]),
@@ -84,13 +84,13 @@ export function drawBoard(ctx: CanvasRenderingContext2D): void {
   for (const col of HOME_COLS) {
     ctx.fillRect(BOARD.x + col * CELL, rowTop(HOME_ROW), CELL, CELL);
   }
-  ctx.fillStyle = PALETTE.safe;
+  ctx.fillStyle = pal.safe;
   ctx.fillRect(BOARD.x, rowTop(MEDIAN_ROW), BOARD.w, CELL);
   ctx.fillRect(BOARD.x, rowTop(START_ROW), BOARD.w, CELL);
-  ctx.fillStyle = PALETTE.road;
+  ctx.fillStyle = pal.road;
   ctx.fillRect(BOARD.x, rowTop(ROAD_ROWS[0]), BOARD.w, ROAD_ROWS.length * CELL);
   // Marcas discontinuas entre carriles: un solo stroke.
-  ctx.strokeStyle = PALETTE.laneLine;
+  ctx.strokeStyle = pal.laneLine;
   ctx.lineWidth = 2;
   ctx.setLineDash([14, 12]);
   ctx.beginPath();
@@ -101,7 +101,7 @@ export function drawBoard(ctx: CanvasRenderingContext2D): void {
   }
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.strokeStyle = PALETTE.frame;
+  ctx.strokeStyle = pal.frame;
   ctx.lineWidth = 2;
   ctx.strokeRect(BOARD.x - 1, BOARD.y - 1, BOARD.w + 2, BOARD.h + 2);
 }
@@ -121,6 +121,7 @@ function fillRound(
 /** Coche o deportivo: carrocería, faros en la cara delantera y cuatro ruedas. */
 function drawCar(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   x: number,
   row: number,
   dir: 1 | -1,
@@ -131,7 +132,7 @@ function drawCar(
   const h = sport ? 20 : 26;
   const left = x + 3;
   const top = rowMid(row) - h / 2;
-  ctx.fillStyle = PALETTE.bg;
+  ctx.fillStyle = pal.wheel;
   for (const wx of [left + 4, left + w - 10]) {
     ctx.fillRect(wx, top - 2, 6, 3);
     ctx.fillRect(wx, top + h - 1, 6, 3);
@@ -139,10 +140,10 @@ function drawCar(
   ctx.fillStyle = color;
   fillRound(ctx, left, top, w, h, 5);
   if (sport) {
-    ctx.fillStyle = PALETTE.bg;
+    ctx.fillStyle = pal.bg;
     ctx.fillRect(left + 4, rowMid(row) - 1.5, w - 8, 3);
   }
-  ctx.fillStyle = PALETTE.hud;
+  ctx.fillStyle = pal.headlight;
   const fx = dir === 1 ? left + w - 5 : left + 1;
   ctx.fillRect(fx, top + 3, 4, 4);
   ctx.fillRect(fx, top + h - 7, 4, 4);
@@ -150,6 +151,7 @@ function drawCar(
 /** Camión: caja de dos celdas y cabina cian en la cara delantera. */
 function drawTruck(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   x: number,
   row: number,
   dir: 1 | -1,
@@ -160,15 +162,16 @@ function drawTruck(
   const left = x + 3;
   const bodyW = w - 6;
   const cab = 12;
-  ctx.fillStyle = PALETTE.truck;
+  ctx.fillStyle = pal.truck;
   fillRound(ctx, left, top, bodyW, h, 3);
-  ctx.fillStyle = PALETTE.car1;
+  ctx.fillStyle = pal.car1;
   const cx = dir === 1 ? left + bodyW - cab : left;
   fillRound(ctx, cx, top + 2, cab, h - 4, 3);
 }
 /** Tronco: cuerpo bronce, extremos redondos y tres vetas. */
 function drawLog(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   x: number,
   row: number,
   w: number,
@@ -177,15 +180,15 @@ function drawLog(
   const top = rowMid(row) - h / 2;
   const left = x + 2;
   const bodyW = w - 4;
-  ctx.fillStyle = PALETTE.log;
+  ctx.fillStyle = pal.log;
   fillRound(ctx, left, top, bodyW, h, h / 2);
-  ctx.fillStyle = PALETTE.logEnd;
+  ctx.fillStyle = pal.logEnd;
   for (const ex of [left + h / 2, left + bodyW - h / 2]) {
     ctx.beginPath();
     ctx.arc(ex, rowMid(row), h / 2 - 4, 0, Math.PI * 2);
     ctx.fill();
   }
-  ctx.strokeStyle = PALETTE.logGrain;
+  ctx.strokeStyle = pal.logGrain;
   ctx.lineWidth = 2;
   ctx.beginPath();
   for (const dy of [-7, 0, 7]) {
@@ -202,6 +205,7 @@ function drawLog(
  */
 function drawCroc(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   lane: Lane,
   obj: LaneObject,
 ): void {
@@ -211,10 +215,10 @@ function drawCroc(
   const head = crocHead(lane, obj);
   const bodyX = lane.dir === 1 ? obj.x + 2 : head.x + head.w;
   const bodyW = obj.w - CELL - 2;
-  ctx.fillStyle = PALETTE.croc;
+  ctx.fillStyle = pal.croc;
   fillRound(ctx, bodyX, top, bodyW, h, 8);
   // Tres crestas sobre el lomo.
-  ctx.fillStyle = PALETTE.bg;
+  ctx.fillStyle = pal.bg;
   for (let k = 0; k < 3; k++) {
     const cx = bodyX + (bodyW * (k + 0.5)) / 3;
     ctx.beginPath();
@@ -224,16 +228,16 @@ function drawCroc(
     ctx.closePath();
     ctx.fill();
   }
-  ctx.fillStyle = PALETTE.crocHead;
+  ctx.fillStyle = pal.crocHead;
   fillRound(ctx, head.x + 1, top + 2, head.w - 3, h - 4, 6);
   // Ojo hacia atrás de la cabeza y mandíbula a lo largo, hacia delante.
   const back = lane.dir === 1 ? head.x + 10 : head.x + head.w - 10;
   const front = lane.dir === 1 ? head.x + head.w - 3 : head.x + 2;
-  ctx.fillStyle = PALETTE.bg;
+  ctx.fillStyle = pal.bg;
   ctx.beginPath();
   ctx.arc(back, top + 8, 3, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = PALETTE.bg;
+  ctx.strokeStyle = pal.bg;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(back, cy + 3);
@@ -261,13 +265,14 @@ function hexagon(
 /**
  * Grupo de tortugas: una por celda, con caparazón y cuatro patas cortas.
  *
- * En aviso, el mismo dibujo a media alfa y parpadeando a 6 Hz —medio
- * hundidas—; bajo el agua, solo un anillo tenue donde estaban, para que el
+ * En aviso, el mismo dibujo a `warnAlpha` —media alfa en el neón oscuro— y
+ * parpadeando a 6 Hz —medio hundidas—; bajo el agua, solo un anillo tenue donde estaban, para que el
  * hueco se lea como «aquí había algo». El parpadeo sale de `blink`, el
  * acumulador del ciclo de buceo, así que la pausa también lo congela.
  */
 function drawTurtles(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   x: number,
   row: number,
   len: number,
@@ -277,7 +282,7 @@ function drawTurtles(
   const cy = rowMid(row);
   if (phase === "under") {
     ctx.save();
-    ctx.strokeStyle = PALETTE.ripple;
+    ctx.strokeStyle = pal.ripple;
     ctx.globalAlpha = 0.3;
     ctx.lineWidth = 2;
     for (let i = 0; i < len; i++) {
@@ -290,11 +295,11 @@ function drawTurtles(
   }
   ctx.save();
   if (phase === "warn") {
-    ctx.globalAlpha = Math.floor(blink * 12) % 2 === 0 ? 0.5 : 0.2;
+    ctx.globalAlpha = Math.floor(blink * 12) % 2 === 0 ? pal.warnAlpha : 0.2;
   }
   for (let i = 0; i < len; i++) {
     const cx = x + i * CELL + CELL / 2;
-    ctx.fillStyle = PALETTE.turtle;
+    ctx.fillStyle = pal.turtle;
     for (const [dx, dy] of [
       [-12, -11],
       [12, -11],
@@ -306,7 +311,7 @@ function drawTurtles(
     ctx.beginPath();
     ctx.arc(cx, cy, 15, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = PALETTE.turtleShell;
+    ctx.fillStyle = pal.turtleShell;
     hexagon(ctx, cx, cy, 8);
   }
   ctx.restore();
@@ -318,6 +323,7 @@ function drawTurtles(
  */
 export function drawLanes(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   lanes: readonly Lane[],
   level: number,
 ): void {
@@ -333,14 +339,15 @@ export function drawLanes(
       switch (lane.kind) {
         case "log":
           if (isCroc(lane, i, level)) {
-            drawCroc(ctx, lane, obj);
+            drawCroc(ctx, pal, lane, obj);
           } else {
-            drawLog(ctx, obj.x, lane.row, obj.w);
+            drawLog(ctx, pal, obj.x, lane.row, obj.w);
           }
           break;
         case "turtle":
           drawTurtles(
             ctx,
+            pal,
             obj.x,
             lane.row,
             lane.len,
@@ -349,16 +356,17 @@ export function drawLanes(
           );
           break;
         case "truck":
-          drawTruck(ctx, obj.x, lane.row, lane.dir, obj.w);
+          drawTruck(ctx, pal, obj.x, lane.row, lane.dir, obj.w);
           break;
         case "car":
         case "sport":
           drawCar(
             ctx,
+            pal,
             obj.x,
             lane.row,
             lane.dir,
-            PALETTE[lane.color as CarColor],
+            pal[lane.color as CarColor],
             lane.kind === "sport",
           );
           break;
@@ -373,6 +381,7 @@ export function drawLanes(
  */
 function frogShape(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   color: string,
   scale: number,
 ): void {
@@ -396,25 +405,28 @@ function frogShape(
     ctx.beginPath();
     ctx.arc(side * 6 * scale, -9 * scale, 4 * scale, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = PALETTE.eye;
+    ctx.fillStyle = pal.eye;
     ctx.beginPath();
     ctx.arc(side * 6 * scale, -10 * scale, 2 * scale, 0, Math.PI * 2);
     ctx.fill();
   }
 }
 /**
- * Los cinco nenúfares. Uno ocupado lleva encima una rana pequeña en cian, con
- * glow: es lo único, junto a la rana viva, que brilla.
+ * Los cinco nenúfares. Uno ocupado lleva encima una rana pequeña en
+ * `frogHome`, con glow en el neón: es lo único, junto a la rana viva, que
+ * brilla. El nenúfar ocupado baja al 30 % —era el 50 %— para que esa rana
+ * llegue a 3:1 sobre él en las seis paletas.
  */
 export function drawHomes(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   homes: readonly boolean[],
 ): void {
   const cy = rowMid(HOME_ROW);
   HOME_COLS.forEach((col, i) => {
     const cx = colCenter(col);
-    ctx.fillStyle = PALETTE.lily;
-    ctx.globalAlpha = homes[i] ? 0.5 : 0.8;
+    ctx.fillStyle = pal.lily;
+    ctx.globalAlpha = homes[i] ? 0.3 : 0.8;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, 16, -Math.PI / 2 + 0.35, -Math.PI / 2 - 0.35 + Math.PI * 2);
@@ -424,42 +436,51 @@ export function drawHomes(
     if (homes[i]) {
       ctx.save();
       ctx.translate(cx, cy);
-      ctx.shadowColor = PALETTE.frogHome;
-      ctx.shadowBlur = 10;
-      frogShape(ctx, PALETTE.frogHome, 0.7);
+      ctx.shadowColor = pal.frogHome;
+      ctx.shadowBlur = pal.glow ? 10 : 0;
+      frogShape(ctx, pal, pal.frogHome, 0.7);
       ctx.restore();
     }
   });
 }
 /**
- * La mosca de bonificación sobre su nenúfar: cuerpo amarillo y dos alas en
- * tinta translúcida, temblando ±1 px. `clock` es el tiempo de juego, así que
+ * La mosca de bonificación sobre su nenúfar: cuerpo en `fly` con un contorno
+ * en `flyEdge` —sin él, amarillo sobre verde vivo no llega a 3:1— y dos alas
+ * translúcidas, temblando ±1 px. `clock` es el tiempo de juego, así que
  * en pausa se queda quieta. Sin glow: ningún elemento nuevo brilla.
  */
 export function drawFly(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   home: number,
   clock: number,
 ): void {
   const cx = colCenter(HOME_COLS[home]) + Math.round(Math.sin(clock * 37));
   const cy = rowMid(HOME_ROW) - 2 + Math.round(Math.cos(clock * 29));
-  ctx.fillStyle = PALETTE.flyWing;
+  ctx.fillStyle = pal.flyWing;
   for (const side of [-1, 1]) {
     ctx.beginPath();
     ctx.ellipse(cx + side * 5, cy - 3, 5, 3, side * 0.5, 0, Math.PI * 2);
     ctx.fill();
   }
-  ctx.fillStyle = PALETTE.fly;
+  ctx.fillStyle = pal.fly;
+  ctx.strokeStyle = pal.flyEdge;
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.stroke();
   ctx.fill();
 }
 /**
- * La rana viva, con glow, orientada según el último salto. Durante HOP_ANIM la
+ * La rana viva, con glow en el neón, orientada según el último salto. Durante HOP_ANIM la
  * posición dibujada interpola desde la celda anterior y la figura se estira un
  * 15 % en la dirección del salto.
  */
-export function drawFrog(ctx: CanvasRenderingContext2D, frog: Frog): void {
+export function drawFrog(
+  ctx: CanvasRenderingContext2D,
+  pal: Palette,
+  frog: Frog,
+): void {
   const t = frog.hopT > 0 ? 1 - frog.hopT / HOP_ANIM : 1;
   const x = frog.prevX + (frog.x - frog.prevX) * t;
   const y =
@@ -469,9 +490,10 @@ export function drawFrog(ctx: CanvasRenderingContext2D, frog: Frog): void {
   ctx.translate(x, y);
   ctx.rotate(FACING_ANGLE[frog.facing]);
   ctx.scale(1, stretch);
-  ctx.shadowColor = PALETTE.frog;
-  ctx.shadowBlur = 12;
-  frogShape(ctx, PALETTE.frog, 1);
+  ctx.shadowColor = pal.frog;
+  // Sin halo fuera del neón: retro y clásico son planos.
+  ctx.shadowBlur = pal.glow ? 12 : 0;
+  frogShape(ctx, pal, pal.frog, 1);
   ctx.restore();
 }
 /**
@@ -481,6 +503,7 @@ export function drawFrog(ctx: CanvasRenderingContext2D, frog: Frog): void {
  */
 export function drawDeath(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   cause: DeathCause,
   at: { x: number; row: number },
   t: number,
@@ -494,7 +517,7 @@ export function drawDeath(
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
   if (cause === "atropellada" || cause === "mordida") {
-    ctx.strokeStyle = PALETTE.death;
+    ctx.strokeStyle = pal.death;
     ctx.beginPath();
     ctx.moveTo(x - 12, y - 12);
     ctx.lineTo(x + 12, y + 12);
@@ -502,7 +525,7 @@ export function drawDeath(
     ctx.lineTo(x - 12, y + 12);
     ctx.stroke();
   } else if (cause === "tiempo") {
-    ctx.strokeStyle = PALETTE.death;
+    ctx.strokeStyle = pal.death;
     ctx.beginPath();
     ctx.arc(x, y, 13, 0, Math.PI * 2);
     ctx.moveTo(x, y);
@@ -511,7 +534,7 @@ export function drawDeath(
     ctx.lineTo(x + 7, y);
     ctx.stroke();
   } else {
-    ctx.strokeStyle = PALETTE.ripple;
+    ctx.strokeStyle = pal.ripple;
     for (let i = 0; i < 3; i++) {
       const r = 4 + (t * 18 + i * 6);
       ctx.globalAlpha = Math.max(0, 1 - t) * (1 - i * 0.25);
@@ -529,16 +552,17 @@ export function drawDeath(
  */
 export function drawHud(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   stats: { score: number; level: number; lives: number },
 ): void {
   ctx.textBaseline = "top";
-  ctx.fillStyle = PALETTE.hudLabel;
+  ctx.fillStyle = pal.hudLabel;
   ctx.font = `10px ${FONT_MONO}`;
   ctx.textAlign = "left";
   ctx.fillText("PUNTUACIÓN", BOARD.x, 4);
   ctx.textAlign = "center";
   ctx.fillText("NIVEL", W / 2, 4);
-  ctx.fillStyle = PALETTE.hud;
+  ctx.fillStyle = pal.hud;
   ctx.font = `14px ${FONT_PIXEL}`;
   ctx.textAlign = "left";
   ctx.fillText(formatScore(stats.score), BOARD.x, 18);
@@ -549,7 +573,7 @@ export function drawHud(
     const x = W - BOARD.x - 10 - (stats.lives - 1 - i) * step;
     ctx.save();
     ctx.translate(x, HUD_H / 2);
-    frogShape(ctx, PALETTE.frog, 0.5);
+    frogShape(ctx, pal, pal.frog, 0.5);
     ctx.restore();
   }
 }
@@ -560,25 +584,26 @@ export function drawHud(
  */
 export function drawTimeBar(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   timeLeft: number,
   clock: number,
 ): void {
   const frac = Math.max(0, Math.min(1, timeLeft / TIME_LIMIT));
   const warn = timeLeft < TIME_WARN;
-  ctx.fillStyle = `rgba(${INK_RGB}, 0.06)`;
+  ctx.fillStyle = pal.timeTrack;
   ctx.fillRect(TIME_BAND.x, TIME_BAND.y, TIME_BAND.w, TIME_BAND.h);
   const visible = !warn || Math.floor(clock * 8) % 2 === 0;
   if (visible) {
-    ctx.fillStyle = warn ? PALETTE.timeWarn : PALETTE.timeBar;
+    ctx.fillStyle = warn ? pal.timeWarn : pal.timeBar;
     ctx.fillRect(TIME_BAND.x, TIME_BAND.y, TIME_BAND.w * frac, TIME_BAND.h);
   }
   ctx.textBaseline = "top";
   ctx.font = `10px ${FONT_MONO}`;
-  ctx.fillStyle = PALETTE.hudLabel;
+  ctx.fillStyle = pal.hudLabel;
   ctx.textAlign = "left";
   ctx.fillText("TIEMPO", TIME_BAND.x, TIME_BAND.y + TIME_BAND.h + 3);
   ctx.textAlign = "right";
-  ctx.fillStyle = warn ? PALETTE.timeWarn : PALETTE.hudLabel;
+  ctx.fillStyle = warn ? pal.timeWarn : pal.hudLabel;
   ctx.fillText(
     `${Math.ceil(timeLeft)} s`,
     TIME_BAND.x + TIME_BAND.w,
@@ -591,12 +616,13 @@ export function drawTimeBar(
  */
 export function drawOverlay(
   ctx: CanvasRenderingContext2D,
+  pal: Palette,
   title: string,
   color: string,
   opts: { dim?: boolean; sub?: string } = {},
 ): void {
   if (opts.dim) {
-    ctx.fillStyle = PALETTE.overlay;
+    ctx.fillStyle = pal.overlay;
     ctx.fillRect(BOARD.x, BOARD.y, BOARD.w, BOARD.h);
   }
   const cy = BOARD.y + BOARD.h / 2;
@@ -604,13 +630,13 @@ export function drawOverlay(
   ctx.textBaseline = "middle";
   ctx.font = `26px ${FONT_PIXEL}`;
   ctx.lineWidth = 6;
-  ctx.strokeStyle = PALETTE.bg;
+  ctx.strokeStyle = pal.bg;
   ctx.strokeText(title, W / 2, cy);
   ctx.fillStyle = color;
   ctx.fillText(title, W / 2, cy);
   if (opts.sub) {
     ctx.font = `16px ${FONT_MONO}`;
-    ctx.fillStyle = PALETTE.hud;
+    ctx.fillStyle = pal.hud;
     ctx.fillText(opts.sub, W / 2, cy + 36);
   }
 }

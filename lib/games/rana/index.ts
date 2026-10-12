@@ -16,6 +16,7 @@
 // de la plataforma los congela de verdad.
 import { isTypingTarget } from "@/lib/games/input";
 import type {
+  Appearance,
   GameEngine,
   GameEngineHooks,
   GameSnapshot,
@@ -32,7 +33,7 @@ import {
   type HopDir,
   LEVEL_BANNER,
   MAX_DT,
-  PALETTE,
+  PALETTES,
   POINTS_ALL_HOMES,
   POINTS_HOME,
   POINTS_ROW,
@@ -65,11 +66,15 @@ import { advanceLanes, createLanes } from "./lanes";
 export function createRanaEngine(
   canvas: HTMLCanvasElement,
   hooks: GameEngineHooks,
+  appearance: Appearance,
 ): GameEngine {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("RANARIA: el canvas no da contexto 2d");
   // El narrowing de arriba no sobrevive dentro de las clausuras.
   const ctx: CanvasRenderingContext2D = context;
+  // ── Apariencia ─────────────────────────────────────────────────────────────
+  // La paleta activa. Cambiarla no toca nada de la partida.
+  let pal = PALETTES[appearance.skin][appearance.mode];
   // ── Estado de la partida ───────────────────────────────────────────────────
   /** Lo que `resolveFrame` lee y modifica: rana, carriles, nenúfares, reloj. */
   let game: FrameState = freshGame();
@@ -271,26 +276,32 @@ export function createRanaEngine(
     if (status === "playing") updateFly(dt);
   }
   function draw(): void {
-    clear(ctx);
-    drawBoard(ctx);
-    drawHomes(ctx, game.homes);
-    if (fly) drawFly(ctx, fly.home, clock);
-    drawLanes(ctx, game.lanes, game.level);
-    if (status === "playing") drawFrog(ctx, game.frog);
+    clear(ctx, pal);
+    drawBoard(ctx, pal);
+    drawHomes(ctx, pal, game.homes);
+    if (fly) drawFly(ctx, pal, fly.home, clock);
+    drawLanes(ctx, pal, game.lanes, game.level);
+    if (status === "playing") drawFrog(ctx, pal, game.frog);
     else if (deathCause) {
-      drawDeath(ctx, deathCause, deathAt, Math.min(1, deathAcc / DEATH_TIME));
+      drawDeath(
+        ctx,
+        pal,
+        deathCause,
+        deathAt,
+        Math.min(1, deathAcc / DEATH_TIME),
+      );
     }
-    drawHud(ctx, { score, level: game.level, lives });
-    drawTimeBar(ctx, game.timeLeft, clock);
+    drawHud(ctx, pal, { score, level: game.level, lives });
+    drawTimeBar(ctx, pal, game.timeLeft, clock);
     if (status === "gameover") {
-      drawOverlay(ctx, "GAME OVER", PALETTE.gameOver, {
+      drawOverlay(ctx, pal, "GAME OVER", pal.gameOver, {
         dim: true,
         sub: `NIVEL ${game.level} · ${score} PUNTOS`,
       });
     } else if (status === "dead" && deathCause) {
-      drawOverlay(ctx, DEATH_LABEL[deathCause], PALETTE.death);
+      drawOverlay(ctx, pal, DEATH_LABEL[deathCause], pal.death);
     } else if (bannerAcc > 0) {
-      drawOverlay(ctx, `NIVEL ${game.level}`, PALETTE.banner);
+      drawOverlay(ctx, pal, `NIVEL ${game.level}`, pal.banner);
     }
   }
   /** Solo avisa al HUD cuando alguno de los tres valores cambia de verdad. */
@@ -327,6 +338,11 @@ export function createRanaEngine(
     rafId = null;
   }
   return {
+    setAppearance(look) {
+      pal = PALETTES[look.skin][look.mode];
+      // En pausa o tras el fin no hay bucle que repinte: se repinta a mano.
+      if (!destroyed && listening && rafId === null) draw();
+    },
     start() {
       if (destroyed) return;
       if (!listening) {
